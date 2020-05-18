@@ -4,10 +4,11 @@
 #include <math.h>
 
 // use "gcc -fPIC -shared -o cforDoublet_Functions.so cforDoublet_Functions.c" to compile and create .so file
+// use "gcc -shared -o cforDoublet_Functions.so -fPIC -fopenmp cforDoublet_Functions.c" to compile and create .so file
 
 void correctDiffpos(double *diffpos, const double *COMs, int number_of_pairs, int timesteps, double Dm, const int *indice_pairs, const int* dim){
     int k, t;
-    int i, j;
+    int i, j, l;
     double correct_current_pos[3];
     double correct_diffpos_square;
     // #pragma omp parallel shared(diffpos,COMs,number_of_pairs,timesteps,Dm,indice_pairs,dim) private(i,j,k,t,correct_current_pos,correct_diffpos_square) 
@@ -40,7 +41,7 @@ void correctDiffpos(double *diffpos, const double *COMs, int number_of_pairs, in
 
                 // Correct the diffpos
                 correct_diffpos_square = 0;
-                for (int l = 0; l < 3; l++){
+                for (l = 0; l < 3; l++){
                     correct_diffpos_square += pow((COMs[i*timesteps*3 + t*3 + l]-correct_current_pos[l]), (double)2);
                 }
                 diffpos[k*timesteps + (t)] = sqrt(correct_diffpos_square);
