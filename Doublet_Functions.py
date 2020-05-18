@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import time
-from scipy import fft, signal, stats
+from scipy import stats
+import ctypes
 
 def calcDoubletFraction(input_phi, input_Ca, input_criteria_Ts, input_criteria_Dms, make_plot, *input_others):
     """
@@ -11,8 +12,13 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_Ts, input_criteria_D
     make_plot = 1 means making plots, 0 means doesn't need to make plots
     
     Output:
-    A list of which element is the dounelt fraction time series for each set of criteria (T, r)
+    [[strict doublet fraction], [general doublet fraction], timesteps (COMs)]
+
+    All the arrays shared by python and C program are stored in double so that we don't need to consider the data compatibility
     """
+
+    # C extension
+    lib = ctypes.cdll.LoadLibrary('./cforDoublet_Functions.so')
 
     # Parameter
     ###########################################################################
@@ -38,46 +44,48 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_Ts, input_criteria_D
 
     
     # Read the preprocessed files by mounting the folder in server, use eval() function
+    ###########################################################################
     # Read the parameters
     with open("/Users/andrewliu/remote_disk/Data_Transfer/{}_parameter.txt".format(job_name)) as f:
         pre_parameters = f.readlines()
     timesteps = int((pre_parameters[pre_parameters.index("timesteps\n")+1])[:-1])
     particle_numbers = int((pre_parameters[pre_parameters.index("particle_numbers\n")+1])[:-1])
-    interval = int((pre_parameters[pre_parameters.index("interval\n")+1])[:-1])
     points_per_particle = int((pre_parameters[pre_parameters.index("points_per_particle\n")+1])[:-1])
     
+    dim = np.zeros(3, dtype = np.int32)
     # Two-cell system
     try:
-        dim = eval((pre_parameters[pre_parameters.index("dim\n")+1])[:-1])
+        tmp_dim = eval((pre_parameters[pre_parameters.index("dim\n")+1])[:-1])
+        for i in range(3):
+            dim[i] = tmp_dim[i]
     # Suspension system
     except:
-        dim = [144, 24, 144]
+        for i in range(3):
+            dim[i] = [144, 24, 144][i]
+    
 
     # Read the position of center of mass
-    with open("/Users/andrewliu/remote_disk/Data_Transfer/{}_COMs.txt".format(job_name)) as f:
-        pre_COMs = eval(f.readlines()[0])
-    COMs = np.reshape(pre_COMs, (particle_numbers, timesteps, 3))    
+    COMs = np.load("/Users/andrewliu/remote_disk/Data_Transfer/{}_COMs.npy".format(job_name))
 
     # Read the y positions
-    with open("/Users/andrewliu/remote_disk/Data_Transfer/{}_Ypos_t.txt".format(job_name)) as f:
-        pre_Ypos_t = eval(f.readlines()[0])
-    Ypos_t = np.reshape(pre_Ypos_t, (interval, particle_numbers*points_per_particle))
-    
+    Ypos_t = np.load("/Users/andrewliu/remote_disk/Data_Transfer/{}_Ypos_t.npy".format(job_name))
 
-    
+
+    # All the following computations can be parallelized
+
     # Calculate t_rot
     ###########################################################################
-    # Format of Ypos_t is Ypos_t[t, particle_id]
-
+    # Format of Ypos_t is Ypos_t[t, node_id]
     Periods = np.zeros(particle_numbers*points_per_particle)
+
     for i in range(particle_numbers*points_per_particle):
-        Ypos_t_norm = Ypos_t[:, i] - np.mean(Ypos_t[:, i])
-        f, Pxx = signal.periodogram(Ypos_t_norm, fs = 1, window='hanning', scaling='spectrum')
-        valid_range = np.where(f > 0.01)
-        Periods[i] = 1/(f[valid_range][np.argsort(Pxx[valid_range])[-1]])
-    
-    # Abandon arithmetic mean because there might be some sigular periods calculated by fft   
+        #Ypos_t_norm = Ypos_t[:, i] - np.mean(Ypos_t[:, i])
+        offset = 10
+        P = np.fft.rfft(Ypos_t[:, i])
+        Periods[i] = (timesteps/2)/(np.argmax(np.abs(P[offset:]))+offset) # divide timesteps by 2 since here is the number of the timesteps of bond0.vtk
+  
     rotation_time = stats.gmean(Periods)*2 # in unit of strain, 2 comes from the ratio WriteConfig/WriteProps (= 4000/2000 = 2)
+    
     if (make_plot == 1):
         plt.figure(2)
         plt.hist(Periods, bins = particle_numbers)
@@ -89,14 +97,14 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_Ts, input_criteria_D
         plt.close()
 
 
-    
+
     # Calculate pair distance
     ###########################################################################
     # Format of COMs is COMs[particle_id, t, 3]
-
+    
     number_of_pairs = int((particle_numbers-1)*particle_numbers/2)
-    diffpos = np.zeros((number_of_pairs, timesteps))
-    indice_pairs = np.zeros((number_of_pairs, 2))
+    diffpos = np.zeros((number_of_pairs, timesteps), dtype = np.float64)
+    indice_pairs = np.zeros((number_of_pairs, 2), dtype = np.int32)
 
     count = 0
     for i in range(particle_numbers-1):
@@ -105,72 +113,48 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_Ts, input_criteria_D
             diffpos[count, :] = np.linalg.norm((COMs[i, :, :] - COMs[j, :, :]), axis=1)
             count += 1       
 
+    # Correct diffpos
+    c_correctDiffpos = lib.correctDiffpos
+    c_correctDiffpos(ctypes.c_void_p(diffpos.ctypes.data), ctypes.c_void_p(COMs.ctypes.data), ctypes.c_int(number_of_pairs),
+    ctypes.c_int(timesteps), ctypes.c_double(Dm), ctypes.c_void_p(indice_pairs.ctypes.data), ctypes.c_void_p(dim.ctypes.data)) 
 
-    # Correct diffpos here
-    for k in range(number_of_pairs):
-        for t in range(1, timesteps):
-            # exceeds maximum physical displacement, i.e. one of the two RBCs cross the boundry
-            if abs(diffpos[k, t-1] - diffpos[k, t]) > 2*Dm: 
-                i, j = int(indice_pairs[k,0]), int(indice_pairs[k,1])
-                correct_current_pos = COMs[j, t, :] # modify the position of the latter one of the two RBCs
-
-                # modify the x coordinate 
-                if (COMs[i, t, 0]-int(dim[0]/2))*(COMs[j, t, 0]-int(dim[0]/2)) < 0:
-                    if (COMs[j, t, 0]-int(dim[0]/2)) < 0: correct_current_pos[0] += int(dim[0])
-                    else: correct_current_pos[0] -= int(dim[0])
-
-                # modify the z coordinate 
-                if (COMs[i, t, 2]-int(dim[1]/2))*(COMs[j, t, 2]-int(dim[1]/2)) < 0:
-                    if (COMs[j, t, 2]-int(dim[1]/2)) < 0: correct_current_pos[2] += int(dim[1])
-                    else: correct_current_pos[2] -= int(dim[1])
-
-                # calculate the correct diff COM distance here
-                diffpos[k, t] = np.linalg.norm(COMs[i, t, :] - correct_current_pos)
-
-
-                
+    
+          
     # Calculate doublet fraction
     ###########################################################################
-
     if (make_plot == 1):
         fig, ax1 = plt.subplots(figsize = (16, 12))
 
-    output = []
+    output_g = []
+    output_s = []
     for criteria_Dm in criteria_Dms:
-        if criteria_Dm == 0.75: marker_Dm = '--'
-        elif criteria_Dm == 1.0: marker_Dm = '-'
-
         for criteria_T in criteria_Ts:
             period = int(round(criteria_T*rotation_time))
-            doublet_or_not = np.zeros((number_of_pairs, timesteps - period)) # 1 means there is a doublet then
-            for i in range(number_of_pairs):# use KMP like algorithm to accelerate the calculation
-                # initialize here
-                t = 0
-                try: # doesn't form doublet
-                    t += ((np.argwhere(diffpos[i,0:period] > (criteria_Dm*Dm)).max())+1)
-                except: # form doublet
-                    doublet_or_not[i, 0] = 1
-                    t += 1 # t = 1
-                while t < timesteps - period:
-                    if doublet_or_not[i, t-1] == 1: # this pair forms doublet in previous timestep
-                        if diffpos[i, t+period-1] < criteria_Dm*Dm: # the doublet survives
-                            doublet_or_not[i, t] = 1
-                            t += 1
-                        else: # the doublet breaks
-                            t += period
-                    else: # this pair doesn't form doublet in previous timestep
-                        try: # doesn't form doublet
-                            t += ((np.argwhere(diffpos[i,t:t+period] > (criteria_Dm*Dm)).max())+1)
-                        except: # form doublet
-                            doublet_or_not[i, t] = 1
-                            t += 1 # t = 1
-            number_of_doublets = np.sum(doublet_or_not, axis = 0)
-            output.append(number_of_doublets*2/particle_numbers)
+
+            doublet_or_not_strict = np.zeros((number_of_pairs, timesteps - period), dtype = np.int32) # 1 means there is a doublet
+            doublet_or_not_general = np.zeros((number_of_pairs, timesteps - period), dtype = np.int32) # 1 means there is a doublet
+  
+            c_calcDFGeneral = lib.calcDFGeneral
+            c_calcDFStrict = lib.calcDFStrict
+
+            c_calcDFGeneral(ctypes.c_void_p(doublet_or_not_general.ctypes.data), ctypes.c_void_p(diffpos.ctypes.data), ctypes.c_int(period),
+            ctypes.c_int(timesteps), ctypes.c_int(number_of_pairs), ctypes.c_double(Dm), ctypes.c_double(criteria_Dm))
+
+            c_calcDFStrict(ctypes.c_void_p(doublet_or_not_strict.ctypes.data), ctypes.c_void_p(diffpos.ctypes.data), ctypes.c_int(period),
+            ctypes.c_int(timesteps), ctypes.c_int(number_of_pairs), ctypes.c_double(Dm), ctypes.c_double(criteria_Dm))
+            
+            number_of_doublets_strict = np.sum(doublet_or_not_strict, axis = 0)
+            number_of_doublets_general = np.sum(doublet_or_not_general, axis = 0)
+            output_s.append(number_of_doublets_strict*2/particle_numbers)
+            output_g.append(number_of_doublets_general*2/particle_numbers)
             # one doublet has two RBCs so to calculate doublet fraction, we need multiply # of doublets by 2
             if (make_plot == 1):
-                ax1.plot(np.array(list(range(timesteps - period)))*WriteProps, number_of_doublets*2/particle_numbers, 
-                        label = "{}Dm, {}t_rot".format(criteria_Dm, criteria_T), linestyle = marker_Dm)
+                ax1.plot(np.array(list(range(timesteps - period)))*WriteProps, number_of_doublets_strict*2/particle_numbers, label = "{}Dm, {}t_rot, strict".format(criteria_Dm, criteria_T))
+                ax1.plot(np.array(list(range(timesteps - period)))*WriteProps, number_of_doublets_general*2/particle_numbers, label = "{}Dm, {}t_rot, general".format(criteria_Dm, criteria_T))
+    
 
+    # Make plot
+    ###########################################################################
     if (make_plot == 1):
         ax1.set_xlabel("timesteps", fontsize = 20)
         ax1.set_ylabel("doublet fraction", fontsize = 20)
@@ -181,9 +165,10 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_Ts, input_criteria_D
         ax2.set_ylim(mn*particle_numbers/2, mx*particle_numbers/2)
         ax2.set_ylabel('# of doublets', fontsize = 20)
         #plt.savefig("./Pictures/Doublet_Fraction_{}_multiple_criteria.png".format(job_name), dpi = 300)
-        plt.close()
+        #plt.close()
+        plt.show()
 
-    return output
+    return [output_s, output_g, timesteps]
 
 
 def getStress(input_phi, input_Ca, stress_category_id, timestep_start, timestep_end, *input_others):
