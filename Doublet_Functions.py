@@ -149,8 +149,8 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_Ts, input_criteria_D
             output_g.append(number_of_doublets_general*2/particle_numbers)
             # one doublet has two RBCs so to calculate doublet fraction, we need multiply # of doublets by 2
             if (make_plot == 1):
-                ax1.plot(np.array(list(range(timesteps - period)))*WriteProps, number_of_doublets_strict*2/particle_numbers, label = "{}Dm, {}t_rot, strict".format(criteria_Dm, criteria_T))
-                ax1.plot(np.array(list(range(timesteps - period)))*WriteProps, number_of_doublets_general*2/particle_numbers, label = "{}Dm, {}t_rot, general".format(criteria_Dm, criteria_T))
+                ax1.plot(np.array(list(range(timesteps - period)))/2, number_of_doublets_strict*2/particle_numbers, label = "{}Dm, {}t_rot, strict".format(criteria_Dm, criteria_T))
+                ax1.plot(np.array(list(range(timesteps - period)))/2, number_of_doublets_general*2/particle_numbers, label = "{}Dm, {}t_rot, general".format(criteria_Dm, criteria_T))
     
 
     # Make plot

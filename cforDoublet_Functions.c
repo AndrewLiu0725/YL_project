@@ -8,42 +8,25 @@
 
 void correctDiffpos(double *diffpos, const double *COMs, int number_of_pairs, int timesteps, double Dm, const int *indice_pairs, const int* dim){
     int k, t;
-    int i, j, l;
-    double correct_current_pos[3];
+    int i, j;
     double correct_diffpos_square;
-    // #pragma omp parallel shared(diffpos,COMs,number_of_pairs,timesteps,Dm,indice_pairs,dim) private(i,j,k,t,correct_current_pos,correct_diffpos_square) 
+    double dx, dy, dz;
+    // #pragma omp parallel shared(diffpos,COMs,number_of_pairs,timesteps,Dm,indice_pairs,dim) private(i,j,k,t,correct_diffpos_square,dx,dy,dz) 
     // #pragma omp for  schedule(static)
     for (k = 0; k < number_of_pairs; k ++){
         for (t = 1; t < timesteps; t ++){
-            if (fabs(diffpos[k*timesteps + (t-1)] - diffpos[k*timesteps + (t)]) > 2*Dm){
-                i = indice_pairs[2*k];
-                j = indice_pairs[2*k + 1];               
-                memcpy(correct_current_pos, COMs +(j*timesteps*3 + t*3), 3*sizeof(double));
-                // Modify x coordinate
-                if ((COMs[i*timesteps*3 + t*3] - dim[0]/2)*(COMs[j*timesteps*3 + t*3] - dim[0]/2) < 0){
-                    if ((COMs[j*timesteps*3 + t*3] - dim[0]/2) < 0){
-                        correct_current_pos[0] += dim[0];
-                    }
-                    else{
-                        correct_current_pos[0] -= dim[0];
-                    }
-                }
+            i = indice_pairs[2*k];
+            j = indice_pairs[2*k + 1];
 
-                // Modify z coordinate
-                if ((COMs[i*timesteps*3 + t*3 + 2] - dim[2]/2)*(COMs[j*timesteps*3 + t*3 + 2] - dim[2]/2) < 0){
-                    if ((COMs[j*timesteps*3 + t*3 + 2] - dim[2]/2) < 0){
-                        correct_current_pos[2] += dim[2];
-                    }
-                    else{
-                        correct_current_pos[2] -= dim[2];
-                    }
-                }
-
-                // Correct the diffpos
-                correct_diffpos_square = 0;
-                for (l = 0; l < 3; l++){
-                    correct_diffpos_square += pow((COMs[i*timesteps*3 + t*3 + l]-correct_current_pos[l]), (double)2);
-                }
+            // Deal with periodic boundary condition
+            dx = fabs(COMs[i*timesteps*3 + t*3] - (COMs[j*timesteps*3 + t*3]));
+            dy = fabs(COMs[i*timesteps*3 + t*3 + 1] - (COMs[j*timesteps*3 + t*3 + 1]));
+            dz = fabs(COMs[i*timesteps*3 + t*3 + 2] - (COMs[j*timesteps*3 + t*3 + 2]));
+            if ((dx > dim[0]/2) || (dz > dim[2]/2)){
+                correct_diffpos_square = dy*dy;
+                if (dx > dim[0]/2) dx = dim[0] - dx;
+                if (dz > dim[2]/2) dz = dim[2] - dz;
+                correct_diffpos_square = dx*dx + dy*dy + dz*dz;
                 diffpos[k*timesteps + (t)] = sqrt(correct_diffpos_square);
             }    
         }
