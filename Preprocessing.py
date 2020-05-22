@@ -49,7 +49,6 @@ else:
     data = f.readlines()
     timesteps = len(data) - 1
     f.close()
-    print('timesteps = ',timesteps)
 
 
 
