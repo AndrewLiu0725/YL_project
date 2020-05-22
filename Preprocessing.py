@@ -22,7 +22,7 @@ if mode == '0':
     D = parameters[parameters.index('D')+1]
     eqWCA = parameters[parameters.index('eqWCA')+1]
     if phi == "5":
-        job_name = job_name = "phi{}/Re0.1/eqWCA{}/h24phi{}Re0.1Ca{}D{}eqWCA{}".format(phi, eqWCA, phi, Ca, D, eqWCA)
+        job_name = "phi{}/Re0.1/eqWCA{}/h24phi{}Re0.1Ca{}D{}eqWCA{}".format(phi, eqWCA, phi, Ca, D, eqWCA)
     else:
         job_name = "phi{}/eqWCA{}/h24phi{}Re0.1Ca{}D{}eqWCA{}".format(phi, eqWCA, phi, Ca, D, eqWCA)
     path_job = "/userdata4/ctliao/Project/HI_ordering/{}/data".format(job_name)
@@ -82,7 +82,7 @@ points_per_particle = 6
 time_index = [] # every WriteConfig timesteps will generate a bond0.vtk, len(time_index) = timesteps/2
 for fn in os.listdir(path_job):
     if fn.split('_')[0] == "bond0": time_index.append(((fn.split('_')[1]).split('.')[0])[1:])
-sorted(time_index, key= lambda k: int(k))
+time_index.sort(key = int)
 
 def getYpos(time):
     f = open(path_job+"/bond0_t{}.vtk".format(time))
