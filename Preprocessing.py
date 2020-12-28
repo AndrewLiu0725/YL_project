@@ -17,7 +17,6 @@ if mode == '0':
     # Suspension system
     particle_num_dict = {'5': 33, '4': 26}
     particle_numbers = particle_num_dict[phi]
-    timesteps = 2500
 
     D = parameters[parameters.index('D')+1]
     eqWCA = parameters[parameters.index('eqWCA')+1]
@@ -28,6 +27,11 @@ if mode == '0':
     path_job = "/userdata4/ctliao/Project/HI_ordering/{}/data".format(job_name)
     dim = [144, 24, 144]
     filename_prefix = "/userdata4/ajliu/Data_Transfer/h24phi{}Re0.1Ca{}D{}eqWCA{}".format(phi, Ca, D, eqWCA)
+
+    f = open(path_job+'/sphere_props.0.dat')
+    data = f.readlines()
+    timesteps = len(data) - 1
+    f.close()
 
 
 else:
@@ -64,10 +68,22 @@ def getCOM(path):
     f.close()
     return COM
 
+def getCOM_NB(path):
+    # shape of temp_positionCOM would be [timesteps][3]
+    COM_NB = np.zeros((timesteps, 3))
+    f = open(path)
+    data = f.readlines()
+    for t in range(timesteps):
+        COM_NB[t, :] = [float(i) for i in data[t+1].split()[1: 4]]
+    f.close()
+    return COM_NB
+
 COMs = np.zeros((particle_numbers, timesteps, 3), dtype = np.float64) # stored in double
+COMs_NB = np.zeros((particle_numbers, timesteps, 3), dtype = np.float64) # stored in double
 
 for i in range(particle_numbers):
     COMs[i, :, :] = getCOM(path_job+'/sphere_props.{}.dat'.format(i))
+    COMs_NB[i, :, :] = getCOM_NB(path_job+'/sphere_props.{}.dat'.format(i))
 print('Time elpased to collect COM data = ', time.time()-start_time)
 
 
@@ -100,7 +116,7 @@ def getYpos(time):
     return Ypos
 
 
-interval = int(timesteps/2)
+interval = len(time_index)
 Ypos_t = []
 for i in range(interval):
     Ypos_t.append(getYpos(time_index[i]))
@@ -110,6 +126,7 @@ print('Time elpased to collect bond0.vtk data = ', time.time()-start_time)
 # Write COMs, bond0, and parameter
 ###########################################################################
 np.save(filename_prefix + "_COMs.npy", COMs)
+np.save(filename_prefix + "_COMs_NB.npy", COMs_NB)
 np.save(filename_prefix + "_Ypos_t.npy", Ypos_t)
 
 f = open(filename_prefix+"_parameter.txt", "w")
