@@ -28,27 +28,27 @@ The preprocessed data includes
 
 ### Data analysis
 #### DoubletFraction_Deviation.py
-Calculate the deviation (in time, after 500 strains) of each ensembled average doublet fraction time series
+    Calculate the deviation (in time, after 500 strains) of each ensembled average doublet fraction time series
 #### DoubletFraction_Histogram.py
-Plot doublet fraction's histogram and fit it with skew normal distribution in suspension system
+    Plot doublet fraction's histogram and fit it with skew normal distribution in suspension system
 #### DoubletFraction_vs_Time_Suspension_EnsembleAveraged.py
-Plot ensemble averaged doublet fraction time series for suspension system
+    Plot ensemble averaged doublet fraction time series for suspension system
 #### ElasticStress_InterParticleDistance_DoubletFraction_vs_Time.py
-Plot elastic stress tensor, interpartilce distance, and doublet fraction/state time series
+    Plot elastic stress tensor, interpartilce distance, and doublet fraction/state time series
 #### ElasticStress_vs_InterParticleDistance.py
-Plot elastic stress tensor vs interparticle distance (avg or max).
-Also provides linear regression line
+    Plot elastic stress tensor vs interparticle distance (avg or max).
+    Also provides linear regression line
 #### PhaseDiagram_Suspension_EnsembleAveraged.py
-Make two plots: doublet fraction vs Ca plot and its phasediagram (in colormap)
+    Make two plots: doublet fraction vs Ca plot and its phasediagram (in colormap)
 #### PhaseDiagram_TwoCell.py
-Plot phase diagram for two-cell system.
+    Plot phase diagram for two-cell system.
 #### Slope_vs_Ca_Suspension_EnsembleAveraged.py
-Plot slope (defined by doublet fraction vs intrinsic viscosity) vs Ca for suspension system.
+    Plot slope (defined by doublet fraction vs intrinsic viscosity) vs Ca for suspension system.
 #### Slope_vs_Ca_TwoCell.py
-Plot slope (defined by doublet fraction vs intrinsic viscosity) vs Ca for two-cell system.
+    Plot slope (defined by doublet fraction vs intrinsic viscosity) vs Ca for two-cell system.
 #### Viscosity_vs_Ca_SeperatedState.py
-Plot intrinsic and relative viscosity vs Ca for both doublet and two-singlet state in two-cell system with all volume fraction.
-Note that the states are seperated!
+    Plot intrinsic and relative viscosity vs Ca for both doublet and two-singlet state in two-cell system with all volume fraction.
+    Note that the states are seperated!
 #### Viscosity_vs_Ca_UnseperatedState.py
-Plot intrinsic and relative viscosity vs Ca for two-cell system with all volume fraction.
-Note that states are not seperated!
+    Plot intrinsic and relative viscosity vs Ca for two-cell system with all volume fraction.
+    Note that states are not seperated!
