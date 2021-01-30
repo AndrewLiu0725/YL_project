@@ -9,8 +9,7 @@ import time as time
 import datetime as datetime
 
 """
-This code is to plot intrinsic and relative viscosity vs Ca 
-for both doublet and two-singlet state with all volume fraction.
+This code is to plot intrinsic and relative viscosity vs Ca for two-cell system with all volume fraction.
 Note that states are not seperated!
 """
 start_time = time.time()

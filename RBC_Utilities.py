@@ -13,7 +13,7 @@ import logging
 import traceback
 
 """
-This utility python file provides functions to calculate doublet fraction, interparticle stress, intrinsic viscosity, 
+This utility python file provides functions to calculate doublet fraction, interparticle/elastic stress, intrinsic viscosity, 
 and relative viscosity for two-cell and suspension system. 
 The Multi-Line Docstring for each function is also provided. 
 Please refer to these docstrings before using these utility functions.
@@ -56,7 +56,9 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
     0 Success
     1 OSError
 
-    Note: All the arrays shared by python and C program are stored in double so that we don't need to consider the data compatibility
+    Note:
+    1. All the arrays shared by python and C program are stored in double so that we don't need to consider the data compatibility.
+    2. You have to preprocess the data before using this utility function.
     """
 
     # C extension
