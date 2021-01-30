@@ -1,138 +1,203 @@
+# ===============================================================================
+# Copyright 2021 An-Jun Liu
+# Last Modified Date: 01/29/2021
+# ===============================================================================
 import os
 import sys
 import numpy as np 
 import time
+import logging
 
-total_start_time = time.time()
-start_time = time.time()
+"""
+This file is to preprocess the data for calculating the doublet function.
+The preprocessed data includes
+1. time series of bounded center of mass of each particle, i.e. _COMs.npy
+2. time series of unbounded center of mass of each particle, i.e. _COMs_NB.npy
+3. time series of y coordinate of specific nodes, i.e. _Ypos_t.npy
+4. parameters including timesteps (COMs time unit), interval (Ypos time unit), particle numbers,
+points per particle (used in Ypos_t), and dimensions, i.e. _parameter.txt
 
-# parameter to be assigned, input format as mode_{}_phi_{}_Ca_{}_D_{}_eqWCA_{} / mode_{}_phi_{}_Ca_{}_angle_{}
-###########################################################################
-parameters = sys.argv[1].split('_')
-phi = parameters[parameters.index('phi')+1]
-Ca = parameters[parameters.index('Ca')+1]
-mode = parameters[parameters.index('mode')+1]
+Use sys.argv[2] to indicate the type of system.
+0 means two-cell system, 1 means suspension.
+Usage: python3 Preprocessing.py [simulation folder name] 0 or python3 Preprocessing.py [simulation folder name] 1
 
-if mode == '0':
-    # Suspension system
-    particle_num_dict = {'5': 33, '4': 26}
-    particle_numbers = particle_num_dict[phi]
+Exit code:
+0 success
+1 already run
+2 OSError
+3 IndexError
+"""
 
-    D = parameters[parameters.index('D')+1]
-    eqWCA = parameters[parameters.index('eqWCA')+1]
-    if phi == "5":
-        job_name = "phi{}/Re0.1/eqWCA{}/h24phi{}Re0.1Ca{}D{}eqWCA{}".format(phi, eqWCA, phi, Ca, D, eqWCA)
-    else:
-        job_name = "phi{}/eqWCA{}/h24phi{}Re0.1Ca{}D{}eqWCA{}".format(phi, eqWCA, phi, Ca, D, eqWCA)
-    path_job = "/userdata4/ctliao/Project/HI_ordering/{}/data".format(job_name)
-    dim = [144, 24, 144]
-    filename_prefix = "/userdata4/ajliu/Data_Transfer/h24phi{}Re0.1Ca{}D{}eqWCA{}".format(phi, Ca, D, eqWCA)
+def BinarySearch(prefix, expected_end, time_increment):
+    """
+    Example of prefix:
+    
+    "/raid6/ctliao/Data/HI_ordering/h24_phi3.8991_Re0.1_Ca0.07_WCA1_zero0.8-7/data/nodePositions_.dat"
 
-    f = open(path_job+'/sphere_props.0.dat')
-    data = f.readlines()
-    timesteps = len(data) - 1
-    f.close()
+    Output:
+    
+    number of valid files
+    """
+
+    if (os.path.isfile(prefix.format((expected_end-1)*time_increment))): # complete simulation
+        return expected_end
+
+    elif not (os.path.isfile(prefix.format(0))): # no base file
+        logging.error(" No such file: {}".format(prefix.format(0)))
+        sys.exit(2)
+
+    else: # binary search here
+        L = 0
+        R = expected_end - 1
+        mid = int((L+R)/2)
+        while(L != mid):
+            if (os.path.isfile(prefix.format(mid*time_increment))):
+                L = mid
+            else:
+                R = mid
+            mid = int((L+R)/2)
+        return mid+1
 
 
+# Setup
+# ===============================================================================
+CT_folder = "/raid6/ctliao/Data/HI_ordering/"
+AJ_folder = "/userdata4/ajliu/RBC_doublet/Data/"
+bead_number = 642 # 642 beads per particle
+points_per_particle = 6
+job_name = sys.argv[1] # name of the data folder
+
+# Two-cell system 
+if sys.argv[2] == "0":
+    working_folder = AJ_folder
+    tmp_filename_prefix = job_name
+
+# Suspension system
+# job_name format is either h24_phi4.4989_Re0.1_Ca0.06_WCA1_zero0.8-8 or h24phi4.9488Re0.1Ca0.06WCA1zero0.8-4
+# tmp_filename_prefix format would be like this: h24phi4.9488Re0.1Ca0.06WCA1zero0.8-4
+# Updated Date: 01/29/2021 by An-Jun Liu
 else:
-    # Two-cell system 
-    particle_numbers = 2
+    working_folder = CT_folder
+    tmp_filename_prefix = ''.join(job_name.split('_'))
 
-    angle = parameters[parameters.index('angle')+1]
-    job_name = "phi_{}_Re_0.1_Ca_{}_aggregation_1KT_ncycle_2000_np_2_angle_{}".format(phi, Ca, angle)
-    path_job = "/userdata4/ajliu/RBC_doublet/Data/{}/data".format(job_name)
-    path_parameter = "/userdata4/ajliu/RBC_doublet/parameter/{}.dat".format(job_name)
+path_job = working_folder + job_name + "/data/"
+filename_prefix = "/userdata4/ajliu/Data_Transfer/" + tmp_filename_prefix # filename prefix of the preprocessed data
 
-    fp = open(path_parameter)
-    dim = [int(axis) for axis in fp.readlines()[3].split()]
-    fp.close()
+# Check if this case is already preprocessed
+if os.path.isfile(filename_prefix + "_COMs.npy"):
+    logging.warning(" Job \"{}\" is already preprocessed.".format(job_name))
+    sys.exit(1)
 
-    filename_prefix = "/userdata4/ajliu/Data_Transfer/{}".format(job_name)
-
-    f = open(path_job+'/sphere_props.0.dat')
+# Get the parameters (may need more robustic way to read the parameters)
+# ===============================================================================
+try:
+    f = open(working_folder + job_name + "/init/parameter.dat", 'r')
     data = f.readlines()
-    timesteps = len(data) - 1
+    dim = [int(axis) for axis in data[3].split()]
+    particle_numbers = int(data[1].split()[0])
+    WriteProps = int(data[11].split()[0])
+    WriteConfig = int(data[11].split()[1])
+    expected_timesteps = int(int(data[5].split()[0])*int(data[5].split()[1])/WriteProps) # NumCycle x NumStep / WriteProps
+    expected_interval = int(int(data[5].split()[0])*int(data[5].split()[1])/WriteConfig) # NumCycle x NumStep / WriteConfig
     f.close()
 
+except OSError:
+    logging.error(" No such file: {}".format(working_folder + job_name + "/init/parameter.dat"))
+    sys.exit(2)
+
+except IndexError:
+    logging.error(" list index out of range in reading parameters from {}.\nMay need change the format of parameter.dat or the way this script reading parameters".format(working_folder + job_name + "/init/parameter.dat"))
+    sys.exit(3)
 
 
-# Get COM data here
-###########################################################################
+# check data format
+new_data_format_flag = 0
+if not os.path.isfile(path_job+'sphere_props.0.dat'):
+    new_data_format_flag = 1
+
+
+
+# Old data format
+# ===============================================================================
 def getCOM(path):
-    # shape of temp_positionCOM would be [timesteps][3]
-    COM = np.zeros((timesteps, 3))
-    f = open(path)
+    # output shape would be [timesteps][3]
+    COM = np.zeros((2, timesteps, 3))
+    f = open(path, 'r')
     data = f.readlines()
     for t in range(timesteps):
-        COM[t, :] = [(float(i)%dim[dim_index]) for dim_index, i in enumerate(data[t+1].split()[1: 4])]
+        COM[0, t, :] = [(float(i)%dim[dim_index]) for dim_index, i in enumerate(data[t+1].split()[1: 4])]
+        COM[1, t, :] = [float(i) for i in data[t+1].split()[1: 4]]
     f.close()
     return COM
 
-def getCOM_NB(path):
-    # shape of temp_positionCOM would be [timesteps][3]
-    COM_NB = np.zeros((timesteps, 3))
-    f = open(path)
-    data = f.readlines()
-    for t in range(timesteps):
-        COM_NB[t, :] = [float(i) for i in data[t+1].split()[1: 4]]
-    f.close()
-    return COM_NB
-
-COMs = np.zeros((particle_numbers, timesteps, 3), dtype = np.float64) # stored in double
-COMs_NB = np.zeros((particle_numbers, timesteps, 3), dtype = np.float64) # stored in double
-
-for i in range(particle_numbers):
-    COMs[i, :, :] = getCOM(path_job+'/sphere_props.{}.dat'.format(i))
-    COMs_NB[i, :, :] = getCOM_NB(path_job+'/sphere_props.{}.dat'.format(i))
-print('Time elpased to collect COM data = ', time.time()-start_time)
-
-
-
-# Get bond0.vtk data here
-###########################################################################
-start_time = time.time()
-
-bead_number = 642 # 642 beads per particle
-points_per_particle = 6
-time_index = [] # every WriteConfig timesteps will generate a bond0.vtk, len(time_index) = timesteps/2
-for fn in os.listdir(path_job):
-    if fn.split('_')[0] == "bond0": time_index.append(((fn.split('_')[1]).split('.')[0])[1:])
-time_index.sort(key = int)
-
+point_offset = int(bead_number/points_per_particle)
 def getYpos(time):
-    f = open(path_job+"/bond0_t{}.vtk".format(time))
+    f = open(path_job+"bond0_t{}.vtk".format(time), 'r')
     data = f.readlines()
-    entering_data = 0
-    for line_index, line in enumerate(data):
-        if line[0].isdigit() and entering_data == 0:
-            end_pos_format = line_index
-            entering_data = 1
-            break
     Ypos = []
     for i in range(particle_numbers):
         for j in range(points_per_particle):
-            Ypos.append(float(data[i*bead_number + j*int(bead_number/points_per_particle) + end_pos_format].split()[1])) # 1 means y pos
+            Ypos.append(float(data[i*bead_number + j*point_offset + 6].split()[1])) # 1 means y pos
     f.close()
-    return Ypos
+    return np.array(Ypos)
+
+if new_data_format_flag == 0:
+    # Get COM data here
+    # ===============================================================================
+    timesteps = sum(1 for line in open(path_job+'sphere_props.0.dat'))-1
+    COMs = np.zeros((particle_numbers, timesteps, 3), dtype = np.float64) # stored in double
+    COMs_NB = np.zeros((particle_numbers, timesteps, 3), dtype = np.float64) # stored in double
+    for i in range(particle_numbers):
+        result = getCOM(path_job+'sphere_props.{}.dat'.format(i))
+        COMs[i, :, :] = result[0]
+        COMs_NB[i, :, :] = result[1]
+
+    # Get bond0.vtk data here
+    # ===============================================================================
+    interval = BinarySearch(path_job+"bond0_t{}.vtk", expected_interval, WriteConfig)
+    Ypos_t = np.zeros((interval, particle_numbers*points_per_particle))
+    for i in range(interval):
+        Ypos_t[i, :] = getYpos(int(i*WriteConfig))
 
 
-interval = len(time_index)
-Ypos_t = []
-for i in range(interval):
-    Ypos_t.append(getYpos(time_index[i]))
-Ypos_t = np.array(Ypos_t)
-print('Time elpased to collect bond0.vtk data = ', time.time()-start_time)
+# New data format
+# ===============================================================================
+else:
+    ## Deal with the incomplete simulation
+    timesteps = BinarySearch(path_job+"nodePositions{}.dat", expected_timesteps, WriteProps)
+    interval = timesteps
+    increment = int(bead_number/points_per_particle)
+    Ypos_t = np.zeros((timesteps, particle_numbers*points_per_particle))
+    COMs = np.zeros((particle_numbers, timesteps, 3), dtype = np.float64) # stored in double
+    COMs_NB = np.zeros((particle_numbers, timesteps, 3), dtype = np.float64) # stored in double
+    for i in range(timesteps):
+        t = i*WriteProps
+        data = np.loadtxt(path_job+"nodePositions{}.dat".format(t))
+        # Ypos_t
+        for j in range(particle_numbers*points_per_particle):
+            Ypos_t[i, j] = data[j*increment, 1]
 
-# Write COMs, bond0, and parameter
-###########################################################################
+        # COMS_NB and COMs_NB
+        for j in range(particle_numbers):
+            COMs_NB[j, i, :] = np.sum(data[j*bead_number:(j+1)*bead_number, :], axis = 0)/bead_number
+            COMs[j, i, 1] = COMs_NB[j, i, 1]
+            COMs[j, i, 0] = np.sum(np.mod(data[j*bead_number:(j+1)*bead_number, 0], dim[0]))/bead_number
+            COMs[j, i, 2] = np.sum(np.mod(data[j*bead_number:(j+1)*bead_number, 2], dim[2]))/bead_number
+
+
+if (expected_timesteps != timesteps):
+    logging.warning(" Job \"{}\" is incomplete!".format(job_name))
+
+# Write COMs, bond0, and parameter into files
+# ===============================================================================
 np.save(filename_prefix + "_COMs.npy", COMs)
 np.save(filename_prefix + "_COMs_NB.npy", COMs_NB)
 np.save(filename_prefix + "_Ypos_t.npy", Ypos_t)
-
 f = open(filename_prefix+"_parameter.txt", "w")
 f.write("timesteps\n{}\n".format(timesteps))
 f.write("particle_numbers\n{}\n".format(particle_numbers))
 f.write("interval\n{}\n".format(interval))
 f.write("points_per_particle\n{}\n".format(points_per_particle))
 f.write("dim\n{}\n".format(dim))
+#f.write("WriteProps\n{}\nWriteConfig\n{}\n".format(WriteProps, WriteConfig))
 f.close()
