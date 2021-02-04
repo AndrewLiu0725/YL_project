@@ -1,19 +1,26 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 01/29/2021
+# Last Modified Date: 02/04/2021
 # ===============================================================================
 import numpy as np 
 import matplotlib.pyplot as plt
 import sys
 import time
 import datetime
-from RBC_Utilities import calcDoubletFraction, getInstrinsicViscosity, getStress
+from RBC_Utilities import calcDoubletFraction
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+from matplotlib import rcParams
+
+
 
 """
 This cose is to plot phase diagram for two-cell system
 """
 
-# Make mean doublet fraction (ensemble) versus Ca plot here
+def Z(x, y, df):
+    return df[x, y]
 
 start_time = time.time()
 
@@ -38,6 +45,7 @@ for phi_index, phi in enumerate(phis):
             dfa_g[phi_index, Ca_index] += np.mean(result[0][0][-int(result[1]/2):])
 dfa_g = dfa_g/len(angles) # average over the ensemble
 
+# doublet fraction vs Ca plot
 plt.figure(figsize = (16,12))
 for phi_index, phi in enumerate(phis):
     plt.plot(Ca_list, dfa_g[phi_index, :] ,label = 'phi = {}'.format(phi))
@@ -50,21 +58,15 @@ plt.legend(prop={'size': 20})
 plt.title("Doublet Fraction vs Ca (Two-cell system)\ncriteria_r = {}Dm, criteria_T = 1t_rot, second half time series".format(r), fontsize = 30)
 plt.tight_layout()
 plt.savefig("./Pictures/TwoCellSystem_DoubletFraction_vs_Ca_SecondHalf_r_{}.png".format(r), dpi = 300)
-
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
-from matplotlib import rcParams
+plt.close()
 
 
-def Z(x, y, df):
-    return df[x, y]
 
+# 3D phase diagram    
 df = dfa_g
 text1 = 'Doublet Fraction'
 text2 = 'DoubletFraction'
 
-        
 fig = plt.figure(figsize = (16,12))
 ax = fig.gca(projection='3d')
 index_X, index_Y = np.meshgrid(np.array(list(range(len(phis)))), np.array(list(range(len(Ca_list)))))
@@ -82,11 +84,14 @@ ax.view_init(azim = -80, elev = 45)
 fig.colorbar(surf, ax = ax)
 fig.tight_layout()
 plt.savefig('./Pictures/TwoCellSystem_PhaseDiagram_3D_{}_SecondHalf_r_{}.png'.format(text2, r), dpi = 300)
+plt.close()
 
 
+
+# 2D phase diagram
 fig, ax = plt.subplots(figsize = (16,12))
-grid_phi = np.array(phis+[phis[-1]+1])-0.5
-grid_Ca = np.array(Ca_list+[Ca_list[-1]+0.01])-0.005
+#grid_phi = np.array(phis+[phis[-1]+1])-0.5
+#grid_Ca = np.array(Ca_list+[Ca_list[-1]+0.01])-0.005
 wider_phis, grid_phi  =[], []
 for x in range(29, 42):
     phi = 2*vol/(24*x**2)
@@ -110,5 +115,6 @@ ax.set_ylabel('phi', fontsize = 30)
 ax.tick_params(labelsize = 25)
 fig.tight_layout()
 plt.savefig('./Pictures/TwoCellSystem_PhaseDiagram_2D_{}_SecondHalf_r_{}.png'.format(text2, r), dpi = 300)
+plt.close()
 
 print('Total time elapsed = {}'.format(str(datetime.timedelta(seconds=time.time()-start_time))))
