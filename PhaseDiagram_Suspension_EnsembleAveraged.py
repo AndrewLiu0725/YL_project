@@ -90,7 +90,8 @@ for phi_index, phi in enumerate(phis):
                 sys.exit()
 
             except:
-                print("Error: no preprocessed data in (phi = {}, Ca = {}, ensemble_id = {})".format(phi, Ca, ensemble_id))
+                pass
+                #print("Error: no preprocessed data in (phi = {}, Ca = {}, ensemble_id = {})".format(phi, Ca, ensemble_id))
 
         if (ensemble_count > 0):
             avg_df[phi_index, Ca_index] = sum_df/ensemble_count
