@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 01/29/2021
+# Last Modified Date: 02/05/2021
 # ===============================================================================
 import os
 import sys
@@ -17,15 +17,17 @@ The preprocessed data includes
 4. parameters including timesteps (COMs time unit), interval (Ypos time unit), particle numbers,
 points per particle (used in Ypos_t), and dimensions, i.e. _parameter.txt
 
-Use sys.argv[2] to indicate the type of system.
-0 means two-cell system, 1 means suspension.
-Usage: python3 Preprocessing.py [simulation folder name] 0 or python3 Preprocessing.py [simulation folder name] 1
+Usage:
+system=0 means two-cell system, 1 means suspension.
+verbose=0 means only showing error meassage, 1 means also showing warnning message
+e.g. python3 Preprocessing.py [simulation folder name] system=0 verbose=0
 
 Exit code:
 0 success
 1 already run
 2 OSError
 3 IndexError
+4 Wrong command format
 """
 
 def BinarySearch(prefix, expected_end, time_increment):
@@ -58,6 +60,10 @@ def BinarySearch(prefix, expected_end, time_increment):
             mid = int((L+R)/2)
         return mid+1
 
+if (len(sys.argv) != 4):
+    logging.error(" Wrong command format!\nUsage:\npython3 Preprocessing.py [simulation folder name] system=[0 or 1] verbose=[0 or 1]")
+    sys.exit(4)
+
 
 # Setup
 # ===============================================================================
@@ -67,8 +73,16 @@ bead_number = 642 # 642 beads per particle
 points_per_particle = 6
 job_name = sys.argv[1] # name of the data folder
 
+# catch flags
+for i in range(2, len(sys.argv)):
+    if len(sys.argv[i]) == 8 and sys.argv[i][:6] == "system":
+        system = int(sys.argv[i][-1])
+    elif len(sys.argv[i]) == 9 and sys.argv[i][:7] == "verbose":
+        verbose = int(sys.argv[i][-1])
+
 # Two-cell system 
-if sys.argv[2] == "0":
+# job_name format is phi_5.0_Re_0.1_Ca_0.2_aggregation_1KT_ncycle_2000_np_2_angle_70
+if system == 0:
     working_folder = AJ_folder
     tmp_filename_prefix = job_name
 
@@ -83,10 +97,12 @@ else:
 path_job = working_folder + job_name + "/data/"
 filename_prefix = "/userdata4/ajliu/Data_Transfer/" + tmp_filename_prefix # filename prefix of the preprocessed data
 
-# Check if this case is already preprocessed
-if os.path.isfile(filename_prefix + "_COMs.npy"):
-    logging.warning(" Job \"{}\" is already preprocessed.".format(job_name))
-    sys.exit(1)
+# check data format
+new_data_format_flag = 0 # 0 means old data format, 1 means new one
+if not os.path.isfile(path_job+'sphere_props.0.dat'):
+    new_data_format_flag = 1
+
+
 
 # Get the parameters (may need more robustic way to read the parameters)
 # ===============================================================================
@@ -110,14 +126,33 @@ except IndexError:
     sys.exit(3)
 
 
-# check data format
-new_data_format_flag = 0
-if not os.path.isfile(path_job+'sphere_props.0.dat'):
-    new_data_format_flag = 1
 
+# Check if this case is already preprocessed
+# ===============================================================================
+if os.path.isfile(filename_prefix + "_parameter.txt"):
+    f = open(filename_prefix + "_parameter.txt", 'r')
+    pre_parameters = f.readlines()
+    previous_timesteps = int((pre_parameters[pre_parameters.index("timesteps\n")+1])[:-1])
+    f.close()
 
+    if new_data_format_flag:
+        timesteps = BinarySearch(path_job+"nodePositions{}.dat", expected_timesteps, WriteProps)
+    else:
+        timesteps = sum(1 for line in open(path_job+'sphere_props.0.dat'))-1
+    
+    if timesteps <= previous_timesteps:
+        if verbose:
+            logging.warning(" Job \"{}\" is already preprocessed.".format(job_name))
+        sys.exit(1)
+
+if (timesteps < expected_timesteps) and verbose:
+    logging.warning(" Job \"{}\" is incomplete!".format(job_name))
+
+print(job_name)
 
 # Old data format
+# has sphere_props.{}.dat written in frequency WriteProps
+# has bond0_t{}.vtk written in frequency WriteConfig
 # ===============================================================================
 def getCOM(path):
     # output shape would be [timesteps][3]
@@ -144,7 +179,7 @@ def getYpos(time):
 if new_data_format_flag == 0:
     # Get COM data here
     # ===============================================================================
-    timesteps = sum(1 for line in open(path_job+'sphere_props.0.dat'))-1
+    #timesteps = sum(1 for line in open(path_job+'sphere_props.0.dat'))-1
     COMs = np.zeros((particle_numbers, timesteps, 3), dtype = np.float64) # stored in double
     COMs_NB = np.zeros((particle_numbers, timesteps, 3), dtype = np.float64) # stored in double
     for i in range(particle_numbers):
@@ -160,11 +195,12 @@ if new_data_format_flag == 0:
         Ypos_t[i, :] = getYpos(int(i*WriteConfig))
 
 
-# New data format
+# New data format 
+# has nodePositions{}.dat written in frequency WriteProps
+# has bond0_t{}.vtk written in frequency WriteConfig
 # ===============================================================================
 else:
-    ## Deal with the incomplete simulation
-    timesteps = BinarySearch(path_job+"nodePositions{}.dat", expected_timesteps, WriteProps)
+    #timesteps = BinarySearch(path_job+"nodePositions{}.dat", expected_timesteps, WriteProps)
     interval = timesteps
     increment = int(bead_number/points_per_particle)
     Ypos_t = np.zeros((timesteps, particle_numbers*points_per_particle))
@@ -185,8 +221,6 @@ else:
             COMs[j, i, 2] = np.sum(np.mod(data[j*bead_number:(j+1)*bead_number, 2], dim[2]))/bead_number
 
 
-if (expected_timesteps != timesteps):
-    logging.warning(" Job \"{}\" is incomplete!".format(job_name))
 
 # Write COMs, bond0, and parameter into files
 # ===============================================================================
