@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import datetime
-from Doublet_Functions import calcDoubletFraction
+from RBC_Utilities import calcDoubletFraction
 import os
 import sys 
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
