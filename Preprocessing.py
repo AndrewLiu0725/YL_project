@@ -98,9 +98,14 @@ path_job = working_folder + job_name + "/data/"
 filename_prefix = "/userdata4/ajliu/Data_Transfer/" + tmp_filename_prefix # filename prefix of the preprocessed data
 
 # check data format
-new_data_format_flag = 0 # 0 means old data format, 1 means new one
-if not os.path.isfile(path_job+'sphere_props.0.dat'):
-    new_data_format_flag = 1
+if os.path.isfile(path_job+"sphere_props.0.dat"):
+    new_data_format_flag = 0 # 0 means old data format, 1 means new one
+else:
+    if os.path.isfile(path_job+"nodePositions0.dat"):
+        new_data_format_flag = 1
+    else:
+        logging.error(" Neither {} nor {} exists!".format(path_job+"sphere_props.0.dat", path_job+"nodePositions0.dat"))
+        sys.exit(2)
 
 
 
@@ -136,19 +141,16 @@ if os.path.isfile(filename_prefix + "_parameter.txt"):
     f.close()
 
     if new_data_format_flag:
-        timesteps = BinarySearch(path_job+"nodePositions{}.dat", expected_timesteps, WriteProps)
+        current_timesteps = BinarySearch(path_job+"nodePositions{}.dat", expected_timesteps, WriteProps)
     else:
-        timesteps = sum(1 for line in open(path_job+'sphere_props.0.dat'))-1
+        current_timesteps = sum(1 for line in open(path_job+'sphere_props.0.dat'))-1
     
-    if timesteps <= previous_timesteps:
+    if current_timesteps <= previous_timesteps:
         if verbose:
             logging.warning(" Job \"{}\" is already preprocessed.".format(job_name))
         sys.exit(1)
 
-if (timesteps < expected_timesteps) and verbose:
-    logging.warning(" Job \"{}\" is incomplete!".format(job_name))
 
-print(job_name)
 
 # Old data format
 # has sphere_props.{}.dat written in frequency WriteProps
@@ -179,7 +181,7 @@ def getYpos(time):
 if new_data_format_flag == 0:
     # Get COM data here
     # ===============================================================================
-    #timesteps = sum(1 for line in open(path_job+'sphere_props.0.dat'))-1
+    timesteps = sum(1 for line in open(path_job+'sphere_props.0.dat'))-1
     COMs = np.zeros((particle_numbers, timesteps, 3), dtype = np.float64) # stored in double
     COMs_NB = np.zeros((particle_numbers, timesteps, 3), dtype = np.float64) # stored in double
     for i in range(particle_numbers):
@@ -200,7 +202,7 @@ if new_data_format_flag == 0:
 # has bond0_t{}.vtk written in frequency WriteConfig
 # ===============================================================================
 else:
-    #timesteps = BinarySearch(path_job+"nodePositions{}.dat", expected_timesteps, WriteProps)
+    timesteps = BinarySearch(path_job+"nodePositions{}.dat", expected_timesteps, WriteProps)
     interval = timesteps
     increment = int(bead_number/points_per_particle)
     Ypos_t = np.zeros((timesteps, particle_numbers*points_per_particle))
@@ -219,6 +221,9 @@ else:
             COMs[j, i, 1] = COMs_NB[j, i, 1]
             COMs[j, i, 0] = np.sum(np.mod(data[j*bead_number:(j+1)*bead_number, 0], dim[0]))/bead_number
             COMs[j, i, 2] = np.sum(np.mod(data[j*bead_number:(j+1)*bead_number, 2], dim[2]))/bead_number
+
+if (timesteps < expected_timesteps) and verbose:
+    logging.warning(" Job \"{}\" is incomplete!".format(job_name))
 
 
 
