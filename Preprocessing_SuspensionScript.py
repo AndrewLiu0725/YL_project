@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 01/29/2021
+# Last Modified Date: 02/05/2021
 # ===============================================================================
 import os
 import subprocess
@@ -17,7 +17,7 @@ def SendEmail(progress):
     f.close()
     command_line = 'sendmail e5n41kb9n@gmail.com  < email.txt'
     subprocess.Popen(command_line, shell = True)
-    #subprocess.run(["sendmail", "e5n41kb9n@gmail.com", "<", "email.txt"])
+    subprocess.run(["sendmail", "e5n41kb9n@gmail.com", "<", "email.txt"])
 
 # parser
 def parser(string):
@@ -67,8 +67,10 @@ for fn in os.listdir(path):
     if (fn[0] == "h") and (os.path.isdir(path+fn)):
         result = parser(fn)
         if result[0] in phis:
-            subprocess.call(["python3", "Preprocessing.py", fn, '1'])
+            subprocess.call(["python3", "Preprocessing.py", fn, "system=1", "verbose=0"])
             count += 1
             if (count % int(number_of_parameter_set/10) == 0):
                 print("Current progress is {}%".format(int(count*100/number_of_parameter_set)))
-                SendEmail(int(count*100/number_of_parameter_set))
+                #SendEmail(int(count*100/number_of_parameter_set))
+
+#SendEmail(int(count*100/number_of_parameter_set))
