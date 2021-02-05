@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 01/29/2021
+# Last Modified Date: 02/05/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -58,7 +58,7 @@ for phi in parameter_set.keys():
 
 # make plots
 r = 1
-max_timesteps = 3000
+max_timesteps = 10000
 
 for phi in phis:
     for Ca in parameter_set[phi].keys():
