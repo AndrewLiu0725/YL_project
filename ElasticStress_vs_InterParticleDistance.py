@@ -8,7 +8,7 @@ from RBC_Utilities import calcDoubletFraction, getInstrinsicViscosity, getStress
 import scipy as scipy
 
 """
-This code is to plot elastic stress tensor vs interparticle distance, avg or max.
+This code is to plot elastic stress tensor vs interparticle distance, avg or max, in doublet state.
 Also provided linear regression line.
 """
 
