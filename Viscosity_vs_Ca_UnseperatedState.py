@@ -4,7 +4,7 @@
 # ===============================================================================
 import numpy as np 
 import matplotlib.pyplot as plt
-from RBC_Utilities import calcDoubletFraction, getInstrinsicViscosity, getRelativeViscosity
+from RBC_Utilities import calcDoubletFraction, getIntrinsicViscosity, getRelativeViscosity
 import time as time
 import datetime as datetime
 
@@ -28,6 +28,7 @@ Ca_range = np.array([i*0.01 for i in range(1, 21)])
 
 
 # Store the calculated data
+# use second half time series only. Updated: An-Jun Liu, 02/18/2021
 # (iv/rv, mean/std, phi, Ca)
 data = np.zeros((2, 2, len(phi_range), len(Ca_range)))
 
@@ -37,14 +38,14 @@ for phi_index, phi in enumerate(phi_range):
         ## Store stat for each set of phi and Ca: x/x^2/count, d/k, iv/rv
         for j in range(18):
             angle = 90-10*j
-            iv = getInstrinsicViscosity(phi, Ca, 0, ncycle, angle, 0)
+            iv = getIntrinsicViscosity(phi, Ca, 0, ncycle, angle, 0)
             rv = getRelativeViscosity(phi, Ca, 0, ncycle, angle, 0)
 
             ## store the value       
-            data[0, 0, phi_index, Ca_index] = np.mean(iv)
-            data[0, 1, phi_index, Ca_index] = np.std(iv)
-            data[1, 0, phi_index, Ca_index] = np.mean(rv)
-            data[1, 1, phi_index, Ca_index] = np.std(rv)
+            data[0, 0, phi_index, Ca_index] = np.mean(iv[int(len(iv)/2):])
+            data[0, 1, phi_index, Ca_index] = np.std(iv[int(len(iv)/2):])
+            data[1, 0, phi_index, Ca_index] = np.mean(rv[int(len(rv)/2):])
+            data[1, 1, phi_index, Ca_index] = np.std(rv[int(len(rv)/2):])
 
 ### Plot here
 
