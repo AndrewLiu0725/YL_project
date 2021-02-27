@@ -4,7 +4,7 @@
 # ===============================================================================
 import numpy as np 
 import matplotlib.pyplot as plt
-from RBC_Utilities import calcDoubletFraction, getInstrinsicViscosity, getStress
+from RBC_Utilities import calcDoubletFraction, getIntrinsicViscosity, getStress
 
 """
 This code is to plot elastic stress tensor, interpartilce distance, and doublet fraction/state time series.

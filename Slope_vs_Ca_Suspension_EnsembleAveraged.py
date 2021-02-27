@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import datetime
-from RBC_Utilities import calcDoubletFraction, getInstrinsicViscosity
+from RBC_Utilities import calcDoubletFraction, getIntrinsicViscosity
 import os
 from scipy.stats import linregress
 import sys
@@ -84,7 +84,7 @@ for phi_index, phi in enumerate(phis):
             try:
                 result = calcDoubletFraction(phi, Ca, 1, r, 0, ensemble_id, 1)
                 sum_df += np.mean(result[0][0][-int(result[1]/2):]) # second half
-                iv = getInstrinsicViscosity(phi, Ca, result[1]/2, result[1], ensemble_id, 1)
+                iv = getIntrinsicViscosity(phi, Ca, result[1]/2, result[1], ensemble_id, 1)
                 sum_iv += np.mean(iv)
                 ensemble_count += 1
 

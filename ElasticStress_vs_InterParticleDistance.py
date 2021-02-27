@@ -4,7 +4,7 @@
 # ===============================================================================
 import numpy as np 
 import matplotlib.pyplot as plt
-from RBC_Utilities import calcDoubletFraction, getInstrinsicViscosity, getStress
+from RBC_Utilities import calcDoubletFraction, getIntrinsicViscosity, getStress
 import scipy as scipy
 
 """

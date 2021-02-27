@@ -277,7 +277,7 @@ def getStress(input_phi, input_Ca, stress_category_id, timestep_start, timestep_
 
 
 
-def getInstrinsicViscosity(input_phi, input_Ca, timestep_start, timestep_end, depend, system):
+def getIntrinsicViscosity(input_phi, input_Ca, timestep_start, timestep_end, depend, system):
     """
     Input:
 
@@ -324,11 +324,11 @@ def getInstrinsicViscosity(input_phi, input_Ca, timestep_start, timestep_end, de
         intrinsic_eta = (eta-eta_f)/(eta_f*input_phi*0.01) # phi is in percentage unit
 
     except StopIteration:
-        logging.error(" getInstrinsicViscosity():\nWrong value of timestep_start/timestep_end: {}\n".format(path))
+        logging.error(" getIntrinsicViscosity():\nWrong value of timestep_start/timestep_end: {}\n".format(path))
         sys.exit(1)
 
     except OSError:
-        logging.error(" getInstrinsicViscosity():\nNo such file: {}\n".format(path))
+        logging.error(" getIntrinsicViscosity():\nNo such file: {}\n".format(path))
         sys.exit(2)
 
     except Exception:
