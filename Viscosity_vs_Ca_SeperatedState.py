@@ -21,8 +21,8 @@ def clac_stat(time_window, ratio_k):
     result = calcDoubletFraction(phi, Ca, 1.0, r, 0, angle, 0)
     state = result[2][0][0, :2000] # end at 2000 if the total number of timesteps exceeds 2000
     end_timestep = len(state)
-    iv = getIntrinsicViscosity(phi, Ca, 0, ncycle, angle, 0)[:end_timestep]
-    rv = getRelativeViscosity(phi, Ca, 0, ncycle, angle, 0)[:end_timestep]
+    iv = getIntrinsicViscosity(phi, Ca, ncycle, angle, 0)[:end_timestep]
+    rv = getRelativeViscosity(phi, Ca, ncycle, angle, 0)[:end_timestep]
     target_count = time_window*ratio_k
     
     # calculate the stat

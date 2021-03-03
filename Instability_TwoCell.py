@@ -54,7 +54,7 @@ for phi in phi_range:
         for angle in angle_range:
             try:
                 if FLAG:
-                    iv = getIntrinsicViscosity(phi, Ca, 0, ncycle, angle, 0)
+                    iv = getIntrinsicViscosity(phi, Ca, ncycle, angle, 0)
                     min_timesteps = min(min_timesteps, len(iv))
                     df[ensemble_count, :len(iv)] = iv[:len(iv)]
                 else:

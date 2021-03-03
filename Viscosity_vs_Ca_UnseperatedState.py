@@ -38,8 +38,8 @@ for phi_index, phi in enumerate(phi_range):
         ## Store stat for each set of phi and Ca: x/x^2/count, d/k, iv/rv
         for j in range(18):
             angle = 90-10*j
-            iv = getIntrinsicViscosity(phi, Ca, 0, ncycle, angle, 0)
-            rv = getRelativeViscosity(phi, Ca, 0, ncycle, angle, 0)
+            iv = getIntrinsicViscosity(phi, Ca, ncycle, angle, 0)
+            rv = getRelativeViscosity(phi, Ca, ncycle, angle, 0)
 
             ## store the value       
             data[0, 0, phi_index, Ca_index] = np.mean(iv[int(len(iv)/2):])

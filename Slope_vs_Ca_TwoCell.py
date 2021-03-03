@@ -36,7 +36,7 @@ for phi_index, phi in enumerate(phis):
     for Ca_index, Ca in enumerate(Ca_list):
         for angle_index, angle in enumerate(angles):
             result = calcDoubletFraction(phi, Ca, 1, r, 0, angle, 0)
-            iv = getIntrinsicViscosity(phi, Ca, int(ncycle/2), ncycle, angle, 0)
+            iv = getIntrinsicViscosity(phi, Ca, ncycle, angle, 0)[int(ncycle/2):]
             df[phi_index, Ca_index] += np.mean(result[0][0][-int(result[1]/2):])
             viscosity[phi_index, Ca_index] += np.mean(iv)
 df = df/len(angles) # average over the ensemble

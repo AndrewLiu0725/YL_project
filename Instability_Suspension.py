@@ -86,7 +86,7 @@ for phi in parameter_set.keys():
             for ensemble_id in parameter_set[phi][Ca]:
                 try:
                     if FLAG:
-                        iv = getIntrinsicViscosity(phi, Ca, 0, max_timesteps, ensemble_id, 1)
+                        iv = getIntrinsicViscosity(phi, Ca, max_timesteps, ensemble_id, 1)
                         min_timesteps = min(min_timesteps, len(iv))
                         df[ensemble_count, :len(iv)] = iv[:len(iv)]
                     else:

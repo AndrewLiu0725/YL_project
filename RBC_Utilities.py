@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 01/29/2021
+# Last Modified Date: 03/03/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -277,11 +277,13 @@ def getStress(input_phi, input_Ca, stress_category_id, timestep_start, timestep_
 
 
 
-def getIntrinsicViscosity(input_phi, input_Ca, timestep_start, timestep_end, depend, system):
+def getIntrinsicViscosity(input_phi, input_Ca, ncycle, depend, system):
     """
     Input:
 
     input_phi is in percentage unit
+
+    ncycle is only meaningful for two-cell system, i.e. system = 1
 
     system = 0 means two-cell system, 1 means suspension
 
@@ -309,7 +311,7 @@ def getIntrinsicViscosity(input_phi, input_Ca, timestep_start, timestep_end, dep
     # Two-cell system
     if system == 0:
         angle = depend
-        path = path_AJ + "phi_{}_Re_0.1_Ca_{}_aggregation_1KT_ncycle_2000_np_2_angle_{}/data/wallStress.dat".format(phi, Ca, angle)
+        path = path_AJ + "phi_{}_Re_0.1_Ca_{}_aggregation_1KT_ncycle_{}_np_2_angle_{}/data/wallStress.dat".format(phi, Ca, ncycle, angle)
     # Suspension system
     else:
         ensemble_id = depend
@@ -320,7 +322,8 @@ def getIntrinsicViscosity(input_phi, input_Ca, timestep_start, timestep_end, dep
     # Output and Error Handling
     # ===============================================================================
     try:
-        eta = np.loadtxt(path, skiprows = int(timestep_start+1), max_rows = int(timestep_end-timestep_start))[:,1]
+        #eta = np.loadtxt(path, skiprows = int(timestep_start+1), max_rows = int(timestep_end-timestep_start))[:,1]
+        eta = np.loadtxt(path, skiprows = 1)[:,1]
         intrinsic_eta = (eta-eta_f)/(eta_f*input_phi*0.01) # phi is in percentage unit
 
     except StopIteration:
@@ -339,11 +342,16 @@ def getIntrinsicViscosity(input_phi, input_Ca, timestep_start, timestep_end, dep
 
 
 
-def getRelativeViscosity(input_phi, input_Ca, timestep_start, timestep_end, depend, system):
+def getRelativeViscosity(input_phi, input_Ca, ncycle, depend, system):
     """
     Input:
+
     input_phi is in percentage unit
+
+    ncycle is only meaningful for two-cell system, i.e. system = 1
+
     system = 0 means two-cell system, 1 means suspension
+
     depend means angle when system = 0, esemble id when system = 1
 
     Output:
@@ -367,7 +375,7 @@ def getRelativeViscosity(input_phi, input_Ca, timestep_start, timestep_end, depe
     # Two-cell system
     if system == 0:
         angle = depend
-        path = path_AJ + "phi_{}_Re_0.1_Ca_{}_aggregation_1KT_ncycle_2000_np_2_angle_{}/data/wallStress.dat".format(phi, Ca, angle)
+        path = path_AJ + "phi_{}_Re_0.1_Ca_{}_aggregation_1KT_ncycle_{}_np_2_angle_{}/data/wallStress.dat".format(phi, Ca, ncycle, angle)
     # Suspension system
     else:
         ensemble_id = depend
@@ -378,7 +386,8 @@ def getRelativeViscosity(input_phi, input_Ca, timestep_start, timestep_end, depe
     # Output and Error Handling
     # ===============================================================================
     try:
-        eta = np.loadtxt(path, skiprows = int(timestep_start+1), max_rows = int(timestep_end-timestep_start))[:,1]
+        #eta = np.loadtxt(path, skiprows = int(timestep_start+1), max_rows = int(timestep_end-timestep_start))[:,1]
+        eta = np.loadtxt(path, skiprows = 1)[:,1]
         relative_eta = eta/eta_f
 
     except StopIteration:

@@ -84,7 +84,7 @@ for phi_index, phi in enumerate(phis):
             try:
                 result = calcDoubletFraction(phi, Ca, 1, r, 0, ensemble_id, 1)
                 sum_df += np.mean(result[0][0][-int(result[1]/2):]) # second half
-                iv = getIntrinsicViscosity(phi, Ca, result[1]/2, result[1], ensemble_id, 1)
+                iv = getIntrinsicViscosity(phi, Ca, None, ensemble_id, 1)[result[1]/2 : result[1]]
                 sum_iv += np.mean(iv)
                 ensemble_count += 1
 
