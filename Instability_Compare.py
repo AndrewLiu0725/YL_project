@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 03/03/2021
+# Last Modified Date: 03/06/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,6 +17,10 @@ A plot containing a histogram and a cmf is provided.
 
 start_time = time.time()
 
+
+## two-cell system
+# ===============================================================================
+print("Start colleting the data for two-cell system.")
 root_folder = "/userdata4/ajliu/RBC_doublet/"
 
 ncycle = 4000
@@ -55,17 +59,85 @@ for phi in phi_range:
                     print("Error: Case (phi = {}, Ca = {}, angle = {}): \n{}".format(phi, Ca, angle, e))
 
 
-data_num = len(deviation_origin)
+
+## suspension system
+# ===============================================================================
+print("Start colleting the data for suspension system.")
+path = "/raid6/ctliao/Data/HI_ordering/"
+
+# parser
+def parser(string):
+    # output [phi, Ca, ensemble id]
+    string = string.split("-")
+    ensemble_id = int(string[1])
+    # format: h24_phi4.4989_Re0.1_Ca0.06_WCA1_zero0.8-8
+    if "_" in string[0]:
+        string = string[0].split("_")
+        phi = float(string[1][3:])
+        Ca = float(string[3][2:])
+    # format: h24phi4.9488Re0.1Ca0.06WCA1zero0.8-4
+    else:
+        phi = float(string[0][string[0].find('i')+1:string[0].find('R')])
+        Ca = float(string[0][string[0].find('a')+1:string[0].find('W')])
+    return [phi, Ca, ensemble_id]
+
+
+parameter_set = {}
+# create parameter_set (two layer dict)
+for fn in os.listdir(path):
+    if (fn[0] == "h") and (os.path.isdir(path+fn)):
+        result = parser(fn)
+        [phi, Ca, ensemble_id] = result
+        if phi in parameter_set.keys():
+            if Ca in parameter_set[phi].keys():
+                parameter_set[phi][Ca].append(ensemble_id)
+            else:
+                parameter_set[phi][Ca] = [ensemble_id]
+        else:
+            parameter_set[phi] = {}
+            parameter_set[phi][Ca] = [ensemble_id]
+
+phis = []
+for phi in parameter_set.keys():
+    if (len(parameter_set[phi].keys()) > 5):
+        phis.append(phi)
+
+# calculate deviation
+deviation_suspension = []
+max_timesteps = 10000
+
+for phi in phis:
+    for Ca in parameter_set[phi].keys():
+        for ensemble_id in parameter_set[phi][Ca]:
+            try:
+                iv = getIntrinsicViscosity(phi, Ca, max_timesteps, ensemble_id, 1)
+                first = np.mean(iv[int(0.5*len(iv)):int(0.75*len(iv))])
+                second = np.mean(iv[int(0.75*len(iv)):len(iv)]) 
+                deviation_suspension.append(abs((second-first)/first))
+
+            except KeyboardInterrupt:
+                print("Pressed ctrl+C\n")
+                sys.exit()
+
+            except Exception as e:
+                print("Error: Case (phi = {}, Ca = {}, ensemble_id = {}): \n{}".format(phi, Ca, ensemble_id, e))
+
+
+
+## make plot
+# ===============================================================================
 bin_num = 10
-upper = max(max(deviation_extend), max(deviation_origin))
+upper = max(max(deviation_extend), max(deviation_origin), max(deviation_suspension))
 bin_width = (upper-0)/bin_num
 edge = np.linspace(0, upper, num = (bin_num+1))
 center = np.array([(edge[i]+edge[i+1])/2 for i in range(bin_num)])
 density_origin = np.zeros(bin_num)
 density_extend = np.zeros(bin_num)
+density_suspension = np.zeros(bin_num)
 
 deviation_extend.sort()
 deviation_origin.sort()
+deviation_suspension.sort()
 
 ptr_origin = 0
 for dev in deviation_origin:
@@ -81,8 +153,16 @@ for dev in deviation_extend:
         ptr_extend += 1
     density_extend[ptr_extend] += 1 
 
-density_extend = density_extend/data_num
-density_origin = density_origin/data_num
+ptr_suspension = 0
+for dev in deviation_suspension:
+    # find ptr such that edge[ptr_orgin] < dev <= edge[ptr_orgin+1]
+    while dev > edge[ptr_suspension+1]:
+        ptr_suspension += 1
+    density_suspension[ptr_suspension] += 1 
+
+density_extend = density_extend/len(deviation_origin)
+density_origin = density_origin/len(deviation_origin)
+density_suspension = density_suspension/len(deviation_suspension)
 
 cmf_origin = np.zeros(bin_num)
 cmf_origin[0] = density_origin[0]
@@ -94,17 +174,24 @@ cmf_extend[0] = density_extend[0]
 for i in range(1, bin_num):
     cmf_extend[i] = cmf_extend[i-1] + density_extend[i]
 
+cmf_suspension = np.zeros(bin_num)
+cmf_suspension[0] = density_suspension[0]
+for i in range(1, bin_num):
+    cmf_suspension[i] = cmf_suspension[i-1] + density_suspension[i]
+
 fig, (ax1, ax2) = plt.subplots(1, 2)
-bar_width = 3/8
+bar_width = 1/4
 fig.suptitle("Comparison of instability for two-cell system \nafter increasing simulation time\n")
-ax1.bar(center-bin_width*bar_width/2, density_origin, width = bin_width*bar_width, label = "2000 strains", color = 'r')
-ax1.bar(center+bin_width*bar_width/2, density_extend, width = bin_width*bar_width, label = "4000 strains", color = 'b')
+ax1.bar(center - bin_width*bar_width, density_origin, width = bin_width*bar_width, label = "2000 strains", color = 'r')
+ax1.bar(center, density_extend, width = bin_width*bar_width, label = "4000 strains", color = 'b')
+ax1.bar(center + bin_width*bar_width, density_suspension, width = bin_width*bar_width, label = "suspension", color = 'g')
 ax1.set_title("Histogram")
 ax1.set(xlabel = "Instability", ylabel = "Density")
 ax1.legend()
 
 ax2.plot(center, cmf_origin, label = "2000 strains", color = 'r')
 ax2.plot(center, cmf_extend, label = "4000 strains", color = 'b')
+ax2.plot(center, cmf_suspension, label = "suspension", color = 'g')
 ax2.set_title("Cumulative mass function")
 ax2.set(xlabel = "Instability", ylabel = "Density")
 ax2.legend()
