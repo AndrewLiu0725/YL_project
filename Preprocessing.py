@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 02/05/2021
+# Last Modified Date: 03/07/2021
 # ===============================================================================
 import os
 import sys
@@ -60,7 +60,7 @@ def BinarySearch(prefix, expected_end, time_increment):
             mid = int((L+R)/2)
         return mid+1
 
-if (len(sys.argv) != 4):
+if (len(sys.argv) < 4):
     logging.error(" Wrong command format!\nUsage:\npython3 Preprocessing.py [simulation folder name] system=[0 or 1] verbose=[0 or 1]")
     sys.exit(4)
 
@@ -74,11 +74,18 @@ points_per_particle = 6
 job_name = sys.argv[1] # name of the data folder
 
 # catch flags
+system_found, verbose_found = False, False
 for i in range(2, len(sys.argv)):
     if len(sys.argv[i]) == 8 and sys.argv[i][:6] == "system":
         system = int(sys.argv[i][-1])
+        system_found = True
     elif len(sys.argv[i]) == 9 and sys.argv[i][:7] == "verbose":
         verbose = int(sys.argv[i][-1])
+        verbose_found = True
+if (not system_found) or (not verbose_found):
+    logging.error(" Wrong command format!\nUsage:\npython3 Preprocessing.py [simulation folder name] system=[0 or 1] verbose=[0 or 1]")
+    sys.exit(4)
+
 
 # Two-cell system 
 # job_name format is phi_5.0_Re_0.1_Ca_0.2_aggregation_1KT_ncycle_2000_np_2_angle_70
@@ -169,7 +176,7 @@ def getCOM(path):
 
 point_offset = int(bead_number/points_per_particle)
 def getYpos(time):
-    f = open(path_job+"bond0_t{}.vtk".format(time), 'r')
+    f = open(path_job+"bond0_t{}.vtk".format(int(time) if time != 0 else "0000"), 'r')
     data = f.readlines()
     Ypos = []
     for i in range(particle_numbers):
