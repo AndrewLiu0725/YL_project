@@ -61,3 +61,6 @@ The preprocessed data includes
 #### Instability_Suspension.py
     This code is to calculate the instability of each ensemble-averaged doublet fraction time series and make a histogram out of it for suspension system.
     The instability is defined as (avg(fourth quarther) - avg(third quarter))/avg(third quarter).
+#### MakeSuspensionPlot.py
+    This code is to make the plots of intrinsic and relative viscosity vs Ca and phi for suspension system.
+    The data is pre-calculated.
