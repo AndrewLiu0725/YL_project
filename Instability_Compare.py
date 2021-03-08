@@ -12,6 +12,7 @@ import sys
 
 """
 This code is to compare the instability of the two-cell system before and after increasing the simulation time to 4000 strains.
+Added the data of suspension system to see the difference.
 A plot containing a histogram and a cmf is provided.
 """
 

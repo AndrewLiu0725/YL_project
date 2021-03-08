@@ -52,3 +52,12 @@ The preprocessed data includes
 #### Viscosity_vs_Ca_UnseperatedState.py
     Plot intrinsic and relative viscosity vs Ca for two-cell system with all volume fraction.
     Note that states are not seperated!
+#### Instability_Compare.py
+    This code is to compare the instability of the two-cell system before and after increasing the simulation time to 4000 strains and the suspension system.
+    A plot containing a histogram and a cmf is provided.
+#### Instability_TwoCell.py
+    This code is to calculate the instability of each ensemble-averaged doublet fraction time series and make a histogram out of it for two-cell system.
+    The instability is defined as (avg(fourth quarther) - avg(third quarter))/avg(third quarter).
+#### Instability_Suspension.py
+    This code is to calculate the instability of each ensemble-averaged doublet fraction time series and make a histogram out of it for suspension system.
+    The instability is defined as (avg(fourth quarther) - avg(third quarter))/avg(third quarter).
