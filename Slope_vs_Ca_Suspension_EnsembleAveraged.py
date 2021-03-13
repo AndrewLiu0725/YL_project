@@ -1,12 +1,12 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 01/29/2021
+# Last Modified Date: 03/13/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
 import time
 import datetime
-from RBC_Utilities import calcDoubletFraction, getIntrinsicViscosity
+from RBC_Utilities import calcDoubletFraction, getIntrinsicViscosity, getSuspensionParameterSets
 import os
 from scipy.stats import linregress
 import sys
@@ -17,51 +17,8 @@ This code is to plot slope of doublet fraction vs intrinsic viscosity vs Ca for 
 
 start_time = time.time()
 
+[phis, parameter_set] = getSuspensionParameterSets()
 
-# get the set of parameters
-path = "/raid6/ctliao/Data/HI_ordering/"
-
-# parser
-def parser(string):
-    # output [phi, Ca, ensemble id]
-    string = string.split("-")
-    ensemble_id = int(string[1])
-    # format: h24_phi4.4989_Re0.1_Ca0.06_WCA1_zero0.8-8
-    if "_" in string[0]:
-        string = string[0].split("_")
-        phi = float(string[1][3:])
-        Ca = float(string[3][2:])
-    # format: h24phi4.9488Re0.1Ca0.06WCA1zero0.8-4
-    else:
-        phi = float(string[0][string[0].find('i')+1:string[0].find('R')])
-        Ca = float(string[0][string[0].find('a')+1:string[0].find('W')])
-    return [phi, Ca, ensemble_id]
-
-
-parameter_set = {}
-# create parameter_set (two layer dict)
-for fn in os.listdir(path):
-    if (fn[0] == "h") and (os.path.isdir(path+fn)):
-        result = parser(fn)
-        [phi, Ca, ensemble_id] = result
-        if phi in parameter_set.keys():
-            if Ca in parameter_set[phi].keys():
-                parameter_set[phi][Ca].append(ensemble_id)
-            else:
-                parameter_set[phi][Ca] = [ensemble_id]
-        else:
-            parameter_set[phi] = {}
-            parameter_set[phi][Ca] = [ensemble_id]
-
-
-phis = []
-
-number_of_parameter_set = 0
-for phi in parameter_set.keys():
-    if (len(parameter_set[phi].keys()) > 5):
-        for Ca in parameter_set[phi].keys():
-            number_of_parameter_set += len(parameter_set[phi][Ca])
-        phis.append(phi)
 phis.sort()
 
 Cas = set(list(parameter_set[phis[0]].keys()))

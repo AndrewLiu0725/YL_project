@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 03/03/2021
+# Last Modified Date: 03/13/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -403,3 +403,63 @@ def getRelativeViscosity(input_phi, input_Ca, ncycle, depend, system):
         sys.exit(3)
 
     return relative_eta
+
+
+
+def parser(string):
+    """
+    This parser is utility function for getSuspensionParameterSets().
+    """
+    # output [phi, Ca, ensemble id]
+    string = string.split("-")
+    ensemble_id = int(string[1])
+    # format: h24_phi4.4989_Re0.1_Ca0.06_WCA1_zero0.8-8
+    if "_" in string[0]:
+        string = string[0].split("_")
+        phi = float(string[1][3:])
+        Ca = float(string[3][2:])
+    # format: h24phi4.9488Re0.1Ca0.06WCA1zero0.8-4
+    else:
+        phi = float(string[0][string[0].find('i')+1:string[0].find('R')])
+        Ca = float(string[0][string[0].find('a')+1:string[0].find('W')])
+    return [phi, Ca, ensemble_id]
+
+
+
+def getSuspensionParameterSets():
+    """
+    Output:
+
+    [phis, parameter_set]
+
+    phis: a list of phis which will be used
+
+    parameter_set: a two-layered dictionary which stores the sets of parameters.
+    
+    Usage: parameter_set[phi][Ca] = [ensemble_id]
+    """
+    path = "/raid6/ctliao/Data/HI_ordering/"
+
+    parameter_set = {}
+    # create parameter_set (two layer dict)
+    for fn in os.listdir(path):
+        if (fn[0] == "h") and (os.path.isdir(path+fn)):
+            result = parser(fn)
+            [phi, Ca, ensemble_id] = result
+            if phi in parameter_set.keys():
+                if Ca in parameter_set[phi].keys():
+                    parameter_set[phi][Ca].append(ensemble_id)
+                else:
+                    parameter_set[phi][Ca] = [ensemble_id]
+            else:
+                parameter_set[phi] = {}
+                parameter_set[phi][Ca] = [ensemble_id]
+
+
+    phis = []
+
+    for phi in parameter_set.keys():
+        if (len(parameter_set[phi].keys()) > 5):
+            phis.append(phi)
+
+    return [phis, parameter_set]
