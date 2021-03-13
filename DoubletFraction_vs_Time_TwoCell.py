@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 03/10/2021
+# Last Modified Date: 03/13/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,10 +9,15 @@ import datetime
 from RBC_Utilities import calcDoubletFraction
 import os
 import sys
+import pickle
 
 """
 This code is to plot angle averaged doublet fraction time series for two-cell system.
 """
+
+SAVE = 1
+PLOT = 0
+print("FLAG: SAVE = {}, PLOT = {}".format(SAVE, PLOT))
 
 start_time = time.time()
 
@@ -27,6 +32,9 @@ for x in range(30, 41):
     phi_range.append(float(str(phi*100)[:3]))
 Ca_range = [i*0.01 for i in range(1, 21)]
 angle_range = [90 - 10*j for j in range(18)]
+
+if SAVE:
+    output_dict = {} # dictionary to store data. Format: data[phi][Ca] = avg_df(t)
 
 
 # make plot
@@ -59,18 +67,28 @@ for phi in phi_range:
         # make angle averaged time series
         if ensemble_count > 0:
             avg_df = np.mean(data[:ensemble_count, :min_timesteps], axis=0)
-            std_df = np.std(data[:ensemble_count, :min_timesteps], axis=0)
-            slicing = 20 # python slicing, used to make plot more readable. recommend value: 0.005*ncycle
-            plt.figure(figsize = (16,12))
-            plt.errorbar(list(range(min_timesteps))[::slicing], avg_df[::slicing], yerr = std_df[::slicing])
-            plt.xticks(fontsize = 20)
-            plt.xlabel("time", fontsize = 30)
-            plt.yticks(fontsize = 20)
-            plt.ylabel("doublet fraction", fontsize = 30)
-            plt.title("Doublet Fraction vs Time\nphi = {}, Ca = {}, {} angles".format(phi, Ca, ensemble_count), fontsize = 30)
-            plt.savefig("./Pictures/TwoCellSystem_DoubletFraction_vs_Time_AngleAveraged_phi_{}_Ca_{}.png".format(phi, Ca), dpi = 300)
-            plt.close()
+            if SAVE:
+                if phi in output_dict.keys():
+                    output_dict[phi][Ca] = avg_df
+                else:
+                    output_dict[phi] = {Ca: avg_df}
+            if PLOT:
+                std_df = np.std(data[:ensemble_count, :min_timesteps], axis=0)
+                slicing = 20 # python slicing, used to make plot more readable. recommend value: 0.005*ncycle
+                plt.figure(figsize = (16,12))
+                plt.errorbar(list(range(min_timesteps))[::slicing], avg_df[::slicing], yerr = std_df[::slicing])
+                plt.xticks(fontsize = 20)
+                plt.xlabel("time", fontsize = 30)
+                plt.yticks(fontsize = 20)
+                plt.ylabel("doublet fraction", fontsize = 30)
+                plt.title("Doublet Fraction vs Time\nphi = {}, Ca = {}, {} angles".format(phi, Ca, ensemble_count), fontsize = 30)
+                plt.savefig("./Pictures/TwoCellSystem_DoubletFraction_vs_Time_AngleAveraged_phi_{}_Ca_{}.png".format(phi, Ca), dpi = 300)
+                plt.close()
         else:
             print("Error: no data in (phi = {}, Ca = {})".format(phi, Ca))
+
+if SAVE:
+    with open("AverageDF_TwoCell.pickle", 'wb') as handle:
+        pickle.dump(output_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 print('\nTotal time elapsed = {}'.format(str(datetime.timedelta(seconds=time.time()-start_time))))
