@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 02/04/2021
+# Last Modified Date: 03/11/2021
 # ===============================================================================
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -24,7 +24,7 @@ def Z(x, y, df):
 
 start_time = time.time()
 
-ncycle = 2000
+#ncycle = 2000
 #phis = [3.8, 4.7, 6.0, 6.9]
 vol = 746.3163
 phis  =[]

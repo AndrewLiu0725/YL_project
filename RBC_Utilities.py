@@ -75,7 +75,7 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
     # Two-cell system
     if system == 0:
         angle = depend
-        ncycle = 2000
+        ncycle = 4000
         job_name = "phi_{}_Re_0.1_Ca_{}_aggregation_1KT_ncycle_{}_np_2_angle_{}".format(phi, Ca, ncycle, angle)
     
     # Suspension system

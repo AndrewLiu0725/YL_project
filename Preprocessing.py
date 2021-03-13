@@ -8,6 +8,8 @@ import numpy as np
 import time
 import logging
 
+DEBUG = 0
+
 """
 This file is to preprocess the data for calculating the doublet function.
 The preprocessed data includes
@@ -164,7 +166,7 @@ if os.path.isfile(filename_prefix + "_parameter.txt"):
 # has bond0_t{}.vtk written in frequency WriteConfig
 # ===============================================================================
 def getCOM(path):
-    # output shape would be [timesteps][3]
+    # output shape would be [2][timesteps][3]
     COM = np.zeros((2, timesteps, 3))
     f = open(path, 'r')
     data = f.readlines()
@@ -189,6 +191,7 @@ if new_data_format_flag == 0:
     # Get COM data here
     # ===============================================================================
     timesteps = sum(1 for line in open(path_job+'sphere_props.0.dat'))-1
+    if DEBUG: print("timesteps = ", timesteps)
     COMs = np.zeros((particle_numbers, timesteps, 3), dtype = np.float64) # stored in double
     COMs_NB = np.zeros((particle_numbers, timesteps, 3), dtype = np.float64) # stored in double
     for i in range(particle_numbers):

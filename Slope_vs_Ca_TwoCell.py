@@ -1,13 +1,13 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 01/30/2021
+# Last Modified Date: 03/11/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import time
 import datetime
-from RBC_Utilities import calcDoubletFraction, getIntrinsicViscosity, getRelativeViscosity
+from RBC_Utilities import calcDoubletFraction, getIntrinsicViscosity
 from scipy.stats import linregress
 
 """
@@ -17,7 +17,7 @@ This code is to plot slope of doublet fraction vs intrinsic viscosity vs Ca for 
 start_time = time.time()
 
 # set up
-ncycle = 2000
+ncycle = 4000
 vol = 746.3163
 phis  =[]
 for x in range(30, 41):
@@ -57,6 +57,7 @@ for i, Ca in enumerate(Ca_list):
     plt.ylabel("Doublet fraction")
     plt.title("Two Cell System\nCa = {}".format(Ca))
     plt.savefig("./Pictures/TwoCellSystem_DoubletFraction_vs_IntrinsicViscosity_r_{}_Ca_{}.png".format(r, Ca), dpi = 300)
+    plt.close()
 
 
 fig = plt.figure(figsize = (8,6))
@@ -66,5 +67,6 @@ plt.ylabel("Slope", fontsize = 20)
 plt.title(r"$Slope\left( \frac{doublet\;fraction}{intrinsic\;viscosity}\right)$"+"vs Ca", fontsize = 25)
 fig.tight_layout()
 plt.savefig("./Pictures/TwoCellSystem_Slope_vs_Ca.png", dpi=300)
+plt.close()
 
 print('Total time elapsed = {}'.format(str(datetime.timedelta(seconds=time.time()-start_time))))

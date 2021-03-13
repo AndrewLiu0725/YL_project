@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 03/06/2021
+# Last Modified Date: 03/10/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -34,7 +34,8 @@ Ca_range = [i*0.01 for i in range(1, 21)]
 angle_range = [90 - 10*j for j in range(18)]
 
 deviation_origin = []
-deviation_extend = []
+deviation_extend_fix_500 = []
+deviation_extend_fix_ratio = []
 
 for phi in phi_range:
     for Ca in Ca_range:
@@ -43,13 +44,17 @@ for phi in phi_range:
             if os.path.isfile(root_folder+"Data/"+job+"/data/bond0_t{}.vtk".format(int(3669*2*(int(ncycle/2)-1)))):
                 try:
                     iv = getIntrinsicViscosity(phi, Ca, ncycle, angle, 0)
-                    first_extend = np.mean(iv[int(0.5*ncycle):int(0.75*ncycle)])
-                    second_extend = np.mean(iv[int(0.75*ncycle):ncycle]) 
+                    first_extend_fix_ratio = np.mean(iv[int(0.5*ncycle):int(0.75*ncycle)])
+                    second_extend_fix_ratio = np.mean(iv[int(0.75*ncycle):ncycle]) 
+
+                    first_extend_fix_500 = np.mean(iv[-1000:-500])
+                    second_extend_fix_500 = np.mean(iv[-500:])
 
                     first_origin = np.mean(iv[int(0.5*int(ncycle/2)):int(0.75*int(ncycle/2))])
                     second_origin = np.mean(iv[int(0.75*int(ncycle/2)):int(ncycle/2)]) 
 
-                    deviation_extend.append(abs((second_extend-first_extend)/first_extend))
+                    deviation_extend_fix_ratio.append(abs((second_extend_fix_ratio-first_extend_fix_ratio)/first_extend_fix_ratio))
+                    deviation_extend_fix_500.append(abs((second_extend_fix_500-first_extend_fix_500)/first_extend_fix_500))
                     deviation_origin.append(abs((second_origin-first_origin)/first_origin))
 
                 except KeyboardInterrupt:
@@ -128,15 +133,17 @@ for phi in phis:
 ## make plot
 # ===============================================================================
 bin_num = 10
-upper = max(max(deviation_extend), max(deviation_origin), max(deviation_suspension))
+upper = max(max(deviation_extend_fix_500), max(deviation_extend_fix_ratio), max(deviation_origin), max(deviation_suspension))
 bin_width = (upper-0)/bin_num
 edge = np.linspace(0, upper, num = (bin_num+1))
 center = np.array([(edge[i]+edge[i+1])/2 for i in range(bin_num)])
 density_origin = np.zeros(bin_num)
-density_extend = np.zeros(bin_num)
+density_extend_fix_500 = np.zeros(bin_num)
+density_extend_fix_ratio = np.zeros(bin_num)
 density_suspension = np.zeros(bin_num)
 
-deviation_extend.sort()
+deviation_extend_fix_ratio.sort()
+deviation_extend_fix_500.sort()
 deviation_origin.sort()
 deviation_suspension.sort()
 
@@ -147,12 +154,19 @@ for dev in deviation_origin:
         ptr_origin += 1
     density_origin[ptr_origin] += 1 
 
-ptr_extend = 0
-for dev in deviation_extend:
+ptr_extend_fix_500 = 0
+for dev in deviation_extend_fix_500:
     # find ptr such that edge[ptr_orgin] < dev <= edge[ptr_orgin+1]
-    while dev > edge[ptr_extend+1]:
-        ptr_extend += 1
-    density_extend[ptr_extend] += 1 
+    while dev > edge[ptr_extend_fix_500+1]:
+        ptr_extend_fix_500 += 1
+    density_extend_fix_500[ptr_extend_fix_500] += 1 
+
+ptr_extend_fix_ratio = 0
+for dev in deviation_extend_fix_ratio:
+    # find ptr such that edge[ptr_orgin] < dev <= edge[ptr_orgin+1]
+    while dev > edge[ptr_extend_fix_ratio+1]:
+        ptr_extend_fix_ratio += 1
+    density_extend_fix_ratio[ptr_extend_fix_ratio] += 1 
 
 ptr_suspension = 0
 for dev in deviation_suspension:
@@ -161,7 +175,8 @@ for dev in deviation_suspension:
         ptr_suspension += 1
     density_suspension[ptr_suspension] += 1 
 
-density_extend = density_extend/len(deviation_origin)
+density_extend_fix_500 = density_extend_fix_500/len(deviation_origin)
+density_extend_fix_ratio = density_extend_fix_ratio/len(deviation_origin)
 density_origin = density_origin/len(deviation_origin)
 density_suspension = density_suspension/len(deviation_suspension)
 
@@ -170,10 +185,15 @@ cmf_origin[0] = density_origin[0]
 for i in range(1, bin_num):
     cmf_origin[i] = cmf_origin[i-1] + density_origin[i]
 
-cmf_extend = np.zeros(bin_num)
-cmf_extend[0] = density_extend[0]
+cmf_extend_fix_500 = np.zeros(bin_num)
+cmf_extend_fix_500[0] = density_extend_fix_500[0]
 for i in range(1, bin_num):
-    cmf_extend[i] = cmf_extend[i-1] + density_extend[i]
+    cmf_extend_fix_500[i] = cmf_extend_fix_500[i-1] + density_extend_fix_500[i]
+
+cmf_extend_fix_ratio = np.zeros(bin_num)
+cmf_extend_fix_ratio[0] = density_extend_fix_ratio[0]
+for i in range(1, bin_num):
+    cmf_extend_fix_ratio[i] = cmf_extend_fix_ratio[i-1] + density_extend_fix_ratio[i]
 
 cmf_suspension = np.zeros(bin_num)
 cmf_suspension[0] = density_suspension[0]
@@ -183,15 +203,17 @@ for i in range(1, bin_num):
 fig, (ax1, ax2) = plt.subplots(1, 2)
 bar_width = 1/4
 fig.suptitle("Comparison of instability for two-cell system \nafter increasing simulation time\n")
-ax1.bar(center - bin_width*bar_width, density_origin, width = bin_width*bar_width, label = "2000 strains", color = 'r')
-ax1.bar(center, density_extend, width = bin_width*bar_width, label = "4000 strains", color = 'b')
-ax1.bar(center + bin_width*bar_width, density_suspension, width = bin_width*bar_width, label = "suspension", color = 'g')
+ax1.bar(center - (3/2)*bin_width*bar_width, density_origin, width = bin_width*bar_width, label = "2000 strains", color = 'r')
+ax1.bar(center - (1/2)*bin_width*bar_width, density_extend_fix_ratio, width = bin_width*bar_width, label = "4000 strains (quarter)", color = 'b')
+ax1.bar(center + (1/2)*bin_width*bar_width, density_extend_fix_500, width = bin_width*bar_width, label = "4000 strains (500 strains)", color = 'k')
+ax1.bar(center + (3/2)*bin_width*bar_width, density_suspension, width = bin_width*bar_width, label = "suspension", color = 'g')
 ax1.set_title("Histogram")
 ax1.set(xlabel = "Instability", ylabel = "Density")
 ax1.legend()
 
 ax2.plot(center, cmf_origin, label = "2000 strains", color = 'r')
-ax2.plot(center, cmf_extend, label = "4000 strains", color = 'b')
+ax2.plot(center, cmf_extend_fix_ratio, label = "4000 strains (quarter)", color = 'b')
+ax2.plot(center, cmf_extend_fix_500, label = "4000 strains (500 strains)", color = 'k')
 ax2.plot(center, cmf_suspension, label = "suspension", color = 'g')
 ax2.set_title("Cumulative mass function")
 ax2.set(xlabel = "Instability", ylabel = "Density")
