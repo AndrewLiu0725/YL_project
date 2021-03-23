@@ -42,31 +42,33 @@ def calcRelaxationTime(phi, Ca, significance_level, maxlag_p, plot):
 
     Output:
 
-    [Is steady state?, t_relax, standard deviation errors on the parameters]
+    [Is steady state?, t_relax, standard deviation errors on the parameters, ADF_usedlags]
     """
 
     df = avg_df_dict[phi][Ca]
 
     ### calculate stationarity
     starting_point = [0, 0.25, 0.5]
-    p_value = np.zeros(3)
+    used_lags = []
     unstable = 0
+    fail = 0
 
+    # iterate through 3 different sections of time series
     for i in range(3):
         try:
-            result = adfuller(df[int(starting_point[i]*len(df)):], maxlag = maxlag_p)
-            p_value[i] = result[1]
+            adf_result = adfuller(df[int(starting_point[i]*len(df)):], maxlag = maxlag_p)
 
-            # p value > alpha, fail to reject the null hypothesis (non-stationary)
-            # means the time series is not stationary
-            if p_value[i] > significance_level:
+            # p value > alpha, fail to reject the null hypothesis (non-stationary) means the time series is not stationary
+            if adf_result[1] > significance_level:
                 unstable = 1
+                break
+            else:
+                used_lags.append(adf_result[2])
+                if DEBUG: print("p value =", adf_result[1])
         
         except Exception as e:
             print("Error: Case (phi = {}, Ca = {}): \n{}".format(phi, Ca, e))
-            return [False, None, None]
-
-    if DEBUG: print(p_value)
+            fail = 1
 
 
     ### calculate the relxation time
@@ -122,9 +124,9 @@ def calcRelaxationTime(phi, Ca, significance_level, maxlag_p, plot):
         plt.subplots_adjust(top = 0.85)
         plt.show()
 
-    return [False, None, None] if unstable else [True, t_relax, rmse]
+    return [False] if (unstable or fail) else [True, t_relax, rmse, used_lags]
 
-system = "Suspension"
+system = "TwoCell"
 
 # suspension part
 with open("Data/AverageDF_{}.pickle".format(system), 'rb') as handle:
@@ -149,7 +151,9 @@ if TEST:
 else:
     relaxation_time = []
     total_count = 0
-    autoregressive_order_p = 200
+    autoregressive_order_p = 100
+
+    p_used = []
 
     for phi in avg_df_dict.keys():
         for Ca in avg_df_dict[phi].keys():
@@ -157,6 +161,7 @@ else:
             result = calcRelaxationTime(phi, Ca, 0.05, autoregressive_order_p, 0)
             if result[0]:
                 relaxation_time.append(np.mean(result[1]))
+                p_used.append(np.mean(result[3]))
 
     plt.hist(relaxation_time)
     plt.xlabel("Relaxation time")
@@ -164,5 +169,6 @@ else:
     plt.title("Relaxation time ({}, maxlag = {}, {}%)".format(system, autoregressive_order_p, round(len(relaxation_time)/total_count, 2)*100))
     #plt.show()
     plt.savefig("./Pictures/{}System_RelaxationTime_p_{}_Histogram.png".format(system, autoregressive_order_p), dpi = 200)
+    plt.close()
 
 print('\nTotal time elapsed = {}'.format(str(datetime.timedelta(seconds=time.time()-start_time))))
