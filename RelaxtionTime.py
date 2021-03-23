@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 03/20/2021
+# Last Modified Date: 03/23/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -30,14 +30,15 @@ def C_tau_oneVar(x, a):
     #if DEBUG: print("In C(tau), C_0 = ", C_0)
     return C_0*np.exp(-x/a)
 
-def calcRelaxationTime(phi, Ca, significance_level, plot):
+def calcRelaxationTime(phi, Ca, significance_level, maxlag_p, plot):
     """
     Input:
 
     significance_level: alpha value in null hypothesis test, recommeded value: 0.05
 
-    func_type: 1 is for two-var and 0 is for one-var C(tau)
-
+    maxlag_p: maximum lag which is included in test. 
+    The adfuller function will automatically determining the lag length among the values [0, maxlag].
+    The default method is that the number of lags is chosen to minimize the corresponding information criterion
 
     Output:
 
@@ -46,26 +47,29 @@ def calcRelaxationTime(phi, Ca, significance_level, plot):
 
     df = avg_df_dict[phi][Ca]
 
-    # calculate stationarity
-    alpha = significance_level
+    ### calculate stationarity
     starting_point = [0, 0.25, 0.5]
     p_value = np.zeros(3)
     unstable = 0
 
     for i in range(3):
-        result = adfuller(df[int(starting_point[i]*len(df)):])
-        p_value[i] = result[1]
+        try:
+            result = adfuller(df[int(starting_point[i]*len(df)):], maxlag = maxlag_p)
+            p_value[i] = result[1]
 
-        # p value > alpha, fail to reject the null hypothesis (non-stationary)
-        # means the time series is not stationary
-        if p_value[i] > alpha:
-            unstable = 1
+            # p value > alpha, fail to reject the null hypothesis (non-stationary)
+            # means the time series is not stationary
+            if p_value[i] > significance_level:
+                unstable = 1
+        
+        except Exception as e:
+            print("Error: Case (phi = {}, Ca = {}): \n{}".format(phi, Ca, e))
+            return [False, None, None]
 
     if DEBUG: print(p_value)
 
 
-    # calculate the relxation time
-
+    ### calculate the relxation time
     # setup
     steady_f = np.mean(df[-int(0.25*len(df)):]) # the avg of the last quarter time series
     deviation_f = df - steady_f
@@ -120,7 +124,7 @@ def calcRelaxationTime(phi, Ca, significance_level, plot):
 
     return [False, None, None] if unstable else [True, t_relax, rmse]
 
-system = "TwoCell"
+system = "Suspension"
 
 # suspension part
 with open("Data/AverageDF_{}.pickle".format(system), 'rb') as handle:
@@ -129,33 +133,36 @@ with open("Data/AverageDF_{}.pickle".format(system), 'rb') as handle:
 TEST = 0
 
 if TEST:
-    #print(calcRelaxationTime(avg_df_dict[4.9488][0.08], 0.05, 500, 1, 1))
+    print(calcRelaxationTime(4.9488, 0.08, 0.05, 100, 1))
     #print(calcRelaxationTime(4.3, 0.13, 0.05, 1))
     #print(calcRelaxationTime(4.0, 0.1, 0.05, 1))
     
-    
+    """
     for _ in range(5):
         phi = random.choice(list(avg_df_dict.keys()))
         Ca = random.choice(list(avg_df_dict[phi].keys()))
         print(calcRelaxationTime(phi, Ca, 0.05, 1))
+    """
     
     
 
 else:
     relaxation_time = []
     total_count = 0
+    autoregressive_order_p = 200
+
     for phi in avg_df_dict.keys():
         for Ca in avg_df_dict[phi].keys():
             total_count += 1
-            result = calcRelaxationTime(phi, Ca, 0.05, 0)
+            result = calcRelaxationTime(phi, Ca, 0.05, autoregressive_order_p, 0)
             if result[0]:
                 relaxation_time.append(np.mean(result[1]))
 
     plt.hist(relaxation_time)
     plt.xlabel("Relaxation time")
     plt.ylabel("Count")
-    plt.title("Relaxation time ({}, {}%)".format(system, round(len(relaxation_time)/total_count, 2)*100))
+    plt.title("Relaxation time ({}, maxlag = {}, {}%)".format(system, autoregressive_order_p, round(len(relaxation_time)/total_count, 2)*100))
     #plt.show()
-    plt.savefig("./Pictures/{}System_RelaxationTimeHistogram.png".format(system), dpi = 200)
+    plt.savefig("./Pictures/{}System_RelaxationTime_p_{}_Histogram.png".format(system, autoregressive_order_p), dpi = 200)
 
 print('\nTotal time elapsed = {}'.format(str(datetime.timedelta(seconds=time.time()-start_time))))
