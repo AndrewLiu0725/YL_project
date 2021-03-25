@@ -18,7 +18,7 @@ It also provides flags to save the ensemble averaged and individual time series.
 SAVE_ENSEMBLE_AVERAGED = 0
 SAVE_INDIVIDUAL = 1
 PLOT = 0
-print("FLAG: SAVE_ENSEMBLE_AVERAGED = {}, SAVE_INDIVIDUAL = {}, PLOT = {}".format(SAVE_ENSEMBLE_AVERAGED, SAVE_INDIVIDUAL, PLOT))
+print("FLAGS: SAVE_ENSEMBLE_AVERAGED = {}, SAVE_INDIVIDUAL = {}, PLOT = {}".format(SAVE_ENSEMBLE_AVERAGED, SAVE_INDIVIDUAL, PLOT))
 
 start_time = time.time()
 
@@ -72,7 +72,7 @@ for phi in phis:
                 if phi in output_dict_EA.keys():
                     output_dict_EA[phi][Ca] = avg_df
                 else:
-                    output_dict_EA[phi] = {Ca: avg_df}
+                    output_dict_EA[phi] = {Ca: [avg_df]}
 
             if PLOT:
                 std_df = np.std(df[:ensemble_count, :min_timesteps], axis=0)
