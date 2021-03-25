@@ -85,7 +85,7 @@ for phi in phi_range:
 
             if SAVE_ENSEMBLE_AVERAGED:
                 if phi in output_dict_EA.keys():
-                    output_dict_EA[phi][Ca] = avg_df
+                    output_dict_EA[phi][Ca] = [avg_df]
                 else:
                     output_dict_EA[phi] = {Ca: [avg_df]}
 
