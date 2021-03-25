@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 03/11/2021
+# Last Modified Date: 03/23/2021
 # ===============================================================================
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -8,15 +8,13 @@ import sys
 import time
 import datetime
 from RBC_Utilities import calcDoubletFraction
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
 from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
 from matplotlib import rcParams
 
 
 
 """
-This cose is to plot phase diagram for two-cell system
+This code is to plot phase diagram for two-cell system
 """
 
 def Z(x, y, df):
@@ -24,8 +22,6 @@ def Z(x, y, df):
 
 start_time = time.time()
 
-#ncycle = 2000
-#phis = [3.8, 4.7, 6.0, 6.9]
 vol = 746.3163
 phis  =[]
 for x in range(30, 41):
@@ -48,14 +44,15 @@ dfa_g = dfa_g/len(angles) # average over the ensemble
 # doublet fraction vs Ca plot
 plt.figure(figsize = (16,12))
 for phi_index, phi in enumerate(phis):
-    plt.plot(Ca_list, dfa_g[phi_index, :] ,label = 'phi = {}'.format(phi))
+    if phi_index % 2 == 0: continue
+    plt.plot(Ca_list, dfa_g[phi_index, :], label = r'$\phi$'+" = {}%".format(phi))
     
 plt.xlabel("Ca", fontsize = 30)
 plt.xticks(fontsize = 20)
 plt.ylabel("Doublet Fraction", fontsize = 30)
 plt.yticks(fontsize = 20)
 plt.legend(prop={'size': 20})
-plt.title("Doublet Fraction vs Ca (Two-cell system)\ncriteria_r = {}Dm, criteria_T = 1t_rot, second half time series".format(r), fontsize = 30)
+plt.title("Doublet Fraction vs Ca (two-cell system)", fontsize = 30)
 plt.tight_layout()
 plt.savefig("./Pictures/TwoCellSystem_DoubletFraction_vs_Ca_SecondHalf_r_{}.png".format(r), dpi = 300)
 plt.close()
@@ -75,11 +72,11 @@ surf = ax.plot_surface(Y, X, Z(index_X, index_Y, df), cmap = cm.coolwarm, edgeco
 
 ax.set_zlim(0.0, np.max(df))
 ax.set_xlabel('Ca', fontsize = 30)
-ax.set_ylabel('phi', fontsize = 30)
+ax.set_ylabel(r'$\phi$'+"(%)", fontsize = 30)
 ax.set_zlabel('Doublet fraction', fontsize = 30)
 rcParams['axes.labelpad'] = 20
 ax.tick_params(labelsize = 20)
-ax.set_title('Phase Diagram of phi vs Ca\n'+text1+'\ncriteria_r = {}Dm, criteria_T = 1t_rot, second half time series'.format(r), fontsize = 30)
+ax.set_title("Phase Diagram of {} vs Ca (two-cell system)".format(r'$\phi$'), fontsize = 30)
 ax.view_init(azim = -80, elev = 45)
 fig.colorbar(surf, ax = ax)
 fig.tight_layout()
@@ -90,8 +87,6 @@ plt.close()
 
 # 2D phase diagram
 fig, ax = plt.subplots(figsize = (16,12))
-#grid_phi = np.array(phis+[phis[-1]+1])-0.5
-#grid_Ca = np.array(Ca_list+[Ca_list[-1]+0.01])-0.005
 wider_phis, grid_phi  =[], []
 for x in range(29, 42):
     phi = 2*vol/(24*x**2)
@@ -109,9 +104,9 @@ X, Y = np.meshgrid(grid_phi, grid_Ca)
 im = ax.pcolormesh(Y, X, Z(index_X, index_Y, df), cmap = cm.coolwarm)
 cb = fig.colorbar(im, ax = ax)
 cb.ax.tick_params(labelsize = 25)
-ax.set_title('Phase Diagram of phi vs Ca\n'+text1+'\ncriteria_r = {}Dm, criteria_T = 1t_rot, second half time series'.format(r), fontsize = 30)
+ax.set_title("Phase Diagram of {} vs Ca (two-cell system)".format(r'$\phi$'), fontsize = 30)
 ax.set_xlabel('Ca', fontsize = 30)
-ax.set_ylabel('phi', fontsize = 30)
+ax.set_ylabel(r'$\phi$'+"(%)", fontsize = 30)
 ax.tick_params(labelsize = 25)
 fig.tight_layout()
 plt.savefig('./Pictures/TwoCellSystem_PhaseDiagram_2D_{}_SecondHalf_r_{}.png'.format(text2, r), dpi = 300)

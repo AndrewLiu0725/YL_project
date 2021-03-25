@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 03/13/2021
+# Last Modified Date: 03/25/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,11 +13,13 @@ import pickle
 
 """
 This code is to plot angle averaged doublet fraction time series for two-cell system.
+It also provides flags to save the ensemble averaged and individual time series.
 """
 
-SAVE = 1
+SAVE_ENSEMBLE_AVERAGED = 0
+SAVE_INDIVIDUAL = 1
 PLOT = 0
-print("FLAG: SAVE = {}, PLOT = {}".format(SAVE, PLOT))
+print("FLAG: SAVE_ENSEMBLE_AVERAGED = {}, SAVE_INDIVIDUAL = {}, PLOT = {}".format(SAVE_ENSEMBLE_AVERAGED, SAVE_INDIVIDUAL, PLOT))
 
 start_time = time.time()
 
@@ -33,8 +35,11 @@ for x in range(30, 41):
 Ca_range = [i*0.01 for i in range(1, 21)]
 angle_range = [90 - 10*j for j in range(18)]
 
-if SAVE:
-    output_dict = {} # dictionary to store data. Format: data[phi][Ca] = avg_df(t)
+if SAVE_ENSEMBLE_AVERAGED:
+    output_dict_EA = {} # dictionary to store data. Format: data[phi][Ca] = avg_df(t)
+
+if SAVE_INDIVIDUAL:
+    output_dict_I = {} # dictionary to store data. Format: data[phi][Ca] = [df(t)]
 
 
 # make plot
@@ -57,6 +62,16 @@ for phi in phi_range:
                     data[ensemble_count, :result[1]] = result[0][0][:result[1]]
                     ensemble_count += 1
 
+                    df_t = result[0][0][:result[1]]
+                    if SAVE_INDIVIDUAL:
+                        if phi in output_dict_I.keys():
+                            if Ca in output_dict_I[phi].keys():
+                                output_dict_I[phi][Ca].append(df_t)
+                            else:
+                                output_dict_I[phi][Ca] = [df_t]
+                        else:
+                            output_dict_I[phi] = {Ca: [df_t]}
+
                 except KeyboardInterrupt:
                     print("Pressed ctrl+C\n")
                     sys.exit()
@@ -67,11 +82,13 @@ for phi in phi_range:
         # make angle averaged time series
         if ensemble_count > 0:
             avg_df = np.mean(data[:ensemble_count, :min_timesteps], axis=0)
-            if SAVE:
-                if phi in output_dict.keys():
-                    output_dict[phi][Ca] = avg_df
+
+            if SAVE_ENSEMBLE_AVERAGED:
+                if phi in output_dict_EA.keys():
+                    output_dict_EA[phi][Ca] = avg_df
                 else:
-                    output_dict[phi] = {Ca: avg_df}
+                    output_dict_EA[phi] = {Ca: avg_df}
+
             if PLOT:
                 std_df = np.std(data[:ensemble_count, :min_timesteps], axis=0)
                 slicing = 20 # python slicing, used to make plot more readable. recommend value: 0.005*ncycle
@@ -87,8 +104,12 @@ for phi in phi_range:
         else:
             print("Error: no data in (phi = {}, Ca = {})".format(phi, Ca))
 
-if SAVE:
-    with open("AverageDF_TwoCell.pickle", 'wb') as handle:
-        pickle.dump(output_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+if SAVE_ENSEMBLE_AVERAGED:
+    with open("AverageDF_TwoCell_EnsembleAveraged.pickle", 'wb') as handle:
+        pickle.dump(output_dict_EA, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+if SAVE_INDIVIDUAL:
+    with open("AverageDF_TwoCell_Indivisual.pickle", 'wb') as handle:
+        pickle.dump(output_dict_I, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 print('\nTotal time elapsed = {}'.format(str(datetime.timedelta(seconds=time.time()-start_time))))

@@ -17,8 +17,6 @@ This code is to calculate the relaxation time for twoc-ell and suspension system
 
 DEBUG = 0
 
-start_time = time.time()
-
 C_0 = 0 # global C(0)
 
 def C_tau_twoVar(x, a, b):
@@ -30,7 +28,7 @@ def C_tau_oneVar(x, a):
     #if DEBUG: print("In C(tau), C_0 = ", C_0)
     return C_0*np.exp(-x/a)
 
-def calcRelaxationTime(phi, Ca, significance_level, maxlag_p, plot):
+def calcRelaxationTime(phi, Ca, significance_level, maxlag_p, plot, avg_df_dict):
     """
     Input:
 
@@ -126,49 +124,56 @@ def calcRelaxationTime(phi, Ca, significance_level, maxlag_p, plot):
 
     return [False] if (unstable or fail) else [True, t_relax, rmse, used_lags]
 
-system = "TwoCell"
 
-# suspension part
-with open("Data/AverageDF_{}.pickle".format(system), 'rb') as handle:
-    avg_df_dict = pickle.load(handle)
 
-TEST = 0
+if __name__ == "__main__":
+    start_time = time.time()
 
-if TEST:
-    print(calcRelaxationTime(4.9488, 0.08, 0.05, 100, 1))
-    #print(calcRelaxationTime(4.3, 0.13, 0.05, 1))
-    #print(calcRelaxationTime(4.0, 0.1, 0.05, 1))
-    
-    """
-    for _ in range(5):
-        phi = random.choice(list(avg_df_dict.keys()))
-        Ca = random.choice(list(avg_df_dict[phi].keys()))
-        print(calcRelaxationTime(phi, Ca, 0.05, 1))
-    """
-    
-    
+    # read the data
+    system = "TwoCell"
+    with open("Data/AverageDF_{}.pickle".format(system), 'rb') as handle:
+        avg_df_dict = pickle.load(handle)
 
-else:
-    relaxation_time = []
-    total_count = 0
-    autoregressive_order_p = 100
+    TEST = 1
 
-    p_used = []
+    if TEST:
+        phi = list(avg_df_dict.keys())[0]
+        Ca = list(avg_df_dict[phi].keys())[0]
+        print(calcRelaxationTime(phi, Ca, 0.05, 50, 0, avg_df_dict))
+        #print(calcRelaxationTime(4.9488, 0.08, 0.05, 100, 1, avg_df_dict))
+        #print(calcRelaxationTime(4.3, 0.13, 0.05, 1))
+        #print(calcRelaxationTime(4.0, 0.1, 0.05, 1))
+        
+        """
+        for _ in range(5):
+            phi = random.choice(list(avg_df_dict.keys()))
+            Ca = random.choice(list(avg_df_dict[phi].keys()))
+            print(calcRelaxationTime(phi, Ca, 0.05, 1))
+        """
+        
+        
 
-    for phi in avg_df_dict.keys():
-        for Ca in avg_df_dict[phi].keys():
-            total_count += 1
-            result = calcRelaxationTime(phi, Ca, 0.05, autoregressive_order_p, 0)
-            if result[0]:
-                relaxation_time.append(np.mean(result[1]))
-                p_used.append(np.mean(result[3]))
+    else:
+        relaxation_time = []
+        total_count = 0
+        autoregressive_order_p = 50
 
-    plt.hist(relaxation_time)
-    plt.xlabel("Relaxation time")
-    plt.ylabel("Count")
-    plt.title("Relaxation time ({}, maxlag = {}, {}%)".format(system, autoregressive_order_p, round(len(relaxation_time)/total_count, 2)*100))
-    #plt.show()
-    plt.savefig("./Pictures/{}System_RelaxationTime_p_{}_Histogram.png".format(system, autoregressive_order_p), dpi = 200)
-    plt.close()
+        p_used = []
 
-print('\nTotal time elapsed = {}'.format(str(datetime.timedelta(seconds=time.time()-start_time))))
+        for phi in avg_df_dict.keys():
+            for Ca in avg_df_dict[phi].keys():
+                total_count += 1
+                result = calcRelaxationTime(phi, Ca, 0.05, autoregressive_order_p, 0, avg_df_dict)
+                if result[0]:
+                    relaxation_time.append(np.mean(result[1]))
+                    p_used.append(np.mean(result[3]))
+
+        plt.hist(relaxation_time)
+        plt.xlabel("Relaxation time")
+        plt.ylabel("Count")
+        plt.title("Relaxation time ({}, maxlag = {}, {}%)".format(system, autoregressive_order_p, round(len(relaxation_time)/total_count, 2)*100))
+        #plt.show()
+        plt.savefig("./Pictures/{}System_RelaxationTime_p_{}_Histogram.png".format(system, autoregressive_order_p), dpi = 200)
+        plt.close()
+
+    print('\nTotal time elapsed = {}'.format(str(datetime.timedelta(seconds=time.time()-start_time))))
