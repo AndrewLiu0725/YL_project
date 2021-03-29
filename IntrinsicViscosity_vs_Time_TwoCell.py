@@ -87,10 +87,11 @@ for phi in phi_range:
                     output_dict_EA[phi] = {Ca: [avg_iv_t]}
 
             if PLOT:
+                st = 10
                 std_iv_t = np.std(data[:ensemble_count, :], axis=0)
                 slicing = 20 # python slicing, used to make plot more readable. recommend value: 0.005*ncycle
                 plt.figure(figsize = (16,12))
-                plt.errorbar(list(range(ncycle))[::slicing], avg_iv_t[::slicing], yerr = std_iv_t[::slicing])
+                plt.errorbar(list(range(ncycle))[st::slicing], avg_iv_t[st::slicing], yerr = std_iv_t[st::slicing])
                 plt.xticks(fontsize = 20)
                 plt.xlabel("time", fontsize = 30)
                 plt.yticks(fontsize = 20)
