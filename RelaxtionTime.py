@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 03/25/2021
+# Last Modified Date: 03/29/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,7 +8,6 @@ from scipy.optimize import curve_fit
 import time
 import datetime
 import pickle
-import random
 from statsmodels.tsa.stattools import adfuller
 
 """
@@ -116,46 +115,67 @@ def calcRelaxationTime(df, significance_level, maxlag_p, plot):
     return [False] if (unstable or fail) else [True, t_relax, rmse, used_lags]
 
 
+def analyzeRelaxationTime(variable_type, system, time_series_type, plot, save):
+    """
+    Input:
+
+    plot: flag to make histogram of relaxation time for stationary cases
+
+    save: flag to store unstationary ratio
+    """
+    # get the nested dictionary of time series
+    with open("{}_{}_{}.pickle".format(variable_type, system, time_series_type), 'rb') as handle:
+        ts_dict = pickle.load(handle)
+
+    # collect the relaxation time
+    relaxation_time = []
+    total_count = 0
+    autoregressive_order_p = 50
+    unstationary_ratio = []
+
+    for phi in ts_dict.keys():
+        for Ca in ts_dict[phi].keys():
+            unstationary_count = 0
+            ensemble_count = 0
+
+            # run over ensemble
+            for ts in ts_dict[phi][Ca]:
+                total_count += 1
+                ensemble_count += 1
+                result = calcRelaxationTime(ts, 0.05, autoregressive_order_p, 0)
+                if result[0]:
+                    relaxation_time.append(np.mean(result[1]))
+                else:
+                    unstationary_count += 1
+            
+            unstationary_ratio.append([phi, Ca, unstationary_count/ensemble_count])
+
+    if plot:
+        plt.hist(relaxation_time)
+        plt.xlabel("Relaxation time")
+        plt.ylabel("Count")
+        plt.title("Relaxation time ({}, {}, {}, maxlag = {}, {}%)".format("Intrinsic Viscosity" if variable_type == "IV" else "Doublet Fraction", 
+        system, time_series_type, autoregressive_order_p, round(len(relaxation_time)/total_count, 2)*100))
+        #plt.show()
+        plt.savefig("./Pictures/{}System_{}_RelaxationTime_{}_p_{}_Histogram.png".format("Intrinsic Viscosity" if variable_type == "IV" else "Doublet Fraction", 
+        system, time_series_type, autoregressive_order_p), dpi = 200)
+        plt.close()
+
+    if save:
+        with open("UnstationaryRatio_{}_{}_{}.pickle".format(variable_type, system, time_series_type), 'wb') as handle:
+            pickle.dump(unstationary_ratio, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    
+
 
 if __name__ == "__main__":
     start_time = time.time()
 
-    # read the data
     system_list = ["TwoCell", "Suspension"]
     time_series_type_list = ["Indivisual", "EnsembleAveraged"]
-    system, time_series_type = system_list[0], time_series_type_list[1]
-    print("Current task: {}, {}\n".format(system, time_series_type))
 
-    with open("Data/AverageDF_{}_{}.pickle".format(system, time_series_type), 'rb') as handle:
-        avg_df_dict = pickle.load(handle)
-
-    TEST = 0
-
-    if TEST:
-        for _ in range(5):
-            phi = random.choice(list(avg_df_dict.keys()))
-            Ca = random.choice(list(avg_df_dict[phi].keys()))
-            calcRelaxationTime(avg_df_dict[phi][Ca], 0.05, 50, 1)
-
-    else:
-        relaxation_time = []
-        total_count = 0
-        autoregressive_order_p = 30
-
-        for phi in avg_df_dict.keys():
-            for Ca in avg_df_dict[phi].keys():
-                for df in avg_df_dict[phi][Ca]:
-                    total_count += 1
-                    result = calcRelaxationTime(df, 0.05, autoregressive_order_p, 0)
-                    if result[0]:
-                        relaxation_time.append(np.mean(result[1]))
-
-        plt.hist(relaxation_time)
-        plt.xlabel("Relaxation time")
-        plt.ylabel("Count")
-        plt.title("Relaxation time ({}, {}, maxlag = {}, {}%)".format(system, time_series_type, autoregressive_order_p, round(len(relaxation_time)/total_count, 2)*100))
-        #plt.show()
-        plt.savefig("./Pictures/{}System_RelaxationTime_{}_p_{}_Histogram.png".format(system, time_series_type, autoregressive_order_p), dpi = 200)
-        plt.close()
+    for system in system_list:
+        for time_series_type in time_series_type_list:
+            print("Current task: {}, {}\n".format(system, time_series_type))
+            analyzeRelaxationTime("IV", system, time_series_type, 0, 1)
 
     print('\nTotal time elapsed = {}'.format(str(datetime.timedelta(seconds=time.time()-start_time))))
