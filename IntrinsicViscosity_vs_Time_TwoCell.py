@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 03/29/2021
+# Last Modified Date: 03/30/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -56,7 +56,7 @@ for phi in phi_range:
             job = "phi_{}_Re_0.1_Ca_{}_aggregation_1KT_ncycle_{}_np_2_angle_{}".format(phi, Ca, ncycle, angle)
             if os.path.isfile(root_folder+"Data/"+job+"/data/bond0_t{}.vtk".format(int(3669*2*(int(ncycle/2)-1)))):
                 try:
-                    iv_t = getIntrinsicViscosity(phi, Ca, ncycle, angle, 0)
+                    iv_t = getIntrinsicViscosity(phi, Ca, ncycle, angle, 0)[1:]
                     data[ensemble_count, :] = iv_t[:]
                     ensemble_count += 1
 
@@ -87,11 +87,10 @@ for phi in phi_range:
                     output_dict_EA[phi] = {Ca: [avg_iv_t]}
 
             if PLOT:
-                st = 10
                 std_iv_t = np.std(data[:ensemble_count, :], axis=0)
                 slicing = 20 # python slicing, used to make plot more readable. recommend value: 0.005*ncycle
                 plt.figure(figsize = (16,12))
-                plt.errorbar(list(range(ncycle))[st::slicing], avg_iv_t[st::slicing], yerr = std_iv_t[st::slicing])
+                plt.errorbar(list(range(ncycle))[::slicing], avg_iv_t[::slicing], yerr = std_iv_t[::slicing])
                 plt.xticks(fontsize = 20)
                 plt.xlabel("time", fontsize = 30)
                 plt.yticks(fontsize = 20)
