@@ -50,7 +50,7 @@ def calcRelaxationTime(ts, significance_level, maxlag_p, test_length, plot):
     if T > test_length:
         try:
             adf_result = adfuller(ts[-test_length:], maxlag = maxlag_p)
-            #print(adf_result[1])
+            print(adf_result[1])
             # p value > alpha, fail to reject the null hypothesis (non-stationary) means the time series is not stationary
             if adf_result[1] > significance_level:
                 unstable = 1
@@ -113,7 +113,7 @@ def calcRelaxationTime(ts, significance_level, maxlag_p, test_length, plot):
     return [False] if (unstable or fail) else [True, t_relax, rmse]
 
 
-def analyzeRelaxationTime(variable_type, system, time_series_type, plot, save):
+def analyzeRelaxationTime(variable_type, system, time_series_type, test_length, plot, save):
     """
     Input:
 
@@ -140,7 +140,7 @@ def analyzeRelaxationTime(variable_type, system, time_series_type, plot, save):
             for ts in ts_dict[phi][Ca]:
                 total_count += 1
                 ensemble_count += 1
-                result = calcRelaxationTime(ts, 0.05, autoregressive_order_p, 1000, 0)
+                result = calcRelaxationTime(ts, 0.05, autoregressive_order_p, test_length, 0)
                 if result[0]:
                     relaxation_time.append(np.mean(result[1]))
                 else:
@@ -184,6 +184,6 @@ if __name__ == "__main__":
     for system in system_list:
         for time_series_type in time_series_type_list:
             print("Current task: {}, {}\n".format(system, time_series_type))
-            analyzeRelaxationTime("IV", system, time_series_type, 1, 1)
+            analyzeRelaxationTime("IV", system, time_series_type, 1000 if system == "Suspension" else 2000, 1, 1)
 
     print('\nTotal time elapsed = {}'.format(str(datetime.timedelta(seconds=time.time()-start_time))))
