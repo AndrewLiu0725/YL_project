@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 03/30/2021
+# Last Modified Date: 04/01/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -44,19 +44,20 @@ if SAVE_INDIVIDUAL:
 
 # make plot
 r = 1
+st = 1
 
 for phi in phi_range:
     for Ca in Ca_range:
         # initialize
         ensemble_count = 0
-        data = np.zeros((len(angle_range), ncycle))
+        data = np.zeros((len(angle_range), ncycle-st))
 
         # run over angle distribution
         for angle in angle_range:
             job = "phi_{}_Re_0.1_Ca_{}_aggregation_1KT_ncycle_{}_np_2_angle_{}".format(phi, Ca, ncycle, angle)
             if os.path.isfile(root_folder+"Data/"+job+"/data/bond0_t{}.vtk".format(int(3669*2*(int(ncycle/2)-1)))):
                 try:
-                    iv_t = getIntrinsicViscosity(phi, Ca, ncycle, angle, 0)[1:]
+                    iv_t = getIntrinsicViscosity(phi, Ca, ncycle, angle, 0)[st:]
                     data[ensemble_count, :] = iv_t[:]
                     ensemble_count += 1
 
