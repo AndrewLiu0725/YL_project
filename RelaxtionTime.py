@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 04/01/2021
+# Last Modified Date: 04/02/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -50,7 +50,7 @@ def calcRelaxationTime(ts, significance_level, maxlag_p, test_length, plot):
     if T > test_length:
         try:
             adf_result = adfuller(ts[-test_length:], maxlag = maxlag_p)
-            print(adf_result[1])
+            #print(adf_result[1])
             # p value > alpha, fail to reject the null hypothesis (non-stationary) means the time series is not stationary
             if adf_result[1] > significance_level:
                 unstable = 1
@@ -95,13 +95,16 @@ def calcRelaxationTime(ts, significance_level, maxlag_p, test_length, plot):
 
 
     for i in range(3):
-        popt = curve_fit(C_tau_oneVar, tau_range[:end_list[i]], C[:end_list[i]])[0]
+        try:
+            popt = curve_fit(C_tau_oneVar, tau_range[:end_list[i]], C[:end_list[i]])[0]
 
-        if plot:
-            ax2.plot(tau_range, C_tau_oneVar(tau_range, *popt), color_list[i], label = text_list[i]+"\nt_relax={}".format(int(popt[0])))
+            if plot:
+                ax2.plot(tau_range, C_tau_oneVar(tau_range, *popt), color_list[i], label = text_list[i]+"\nt_relax={}".format(int(popt[0])))
 
-        t_relax.append(popt[0])
-        rmse.append(np.sqrt(np.mean(np.square(C-(C_tau_oneVar(tau_range, *popt))))))
+            t_relax.append(popt[0])
+            rmse.append(np.sqrt(np.mean(np.square(C-(C_tau_oneVar(tau_range, *popt))))))
+        except:
+            pass
 
 
     if plot:
@@ -152,11 +155,10 @@ def analyzeRelaxationTime(variable_type, system, time_series_type, test_length, 
         plt.hist(relaxation_time)
         plt.xlabel("Relaxation time")
         plt.ylabel("Count")
-        plt.title("Relaxation time ({}, {}, {}, maxlag = {}, {}%)".format("Intrinsic Viscosity" if variable_type == "IV" else "Doublet Fraction", 
+        plt.title("Relaxation Time Histogram\n({}, {}, {}, maxlag = {}, {}%)".format("Intrinsic Viscosity" if variable_type == "IV" else "Doublet Fraction", 
         system, time_series_type, autoregressive_order_p, round(len(relaxation_time)/total_count, 2)*100))
-        #plt.show()
-        plt.savefig("./Pictures/{}System_{}_RelaxationTime_{}_p_{}_Histogram.png".format("Intrinsic Viscosity" if variable_type == "IV" else "Doublet Fraction", 
-        system, time_series_type, autoregressive_order_p), dpi = 200)
+        plt.savefig("./Pictures/{}System_{}_RelaxationTime_{}_p_{}_Histogram.png".format(system, "IntrinsicViscosity" if variable_type == "IV" else "DoubletFraction", 
+        time_series_type, autoregressive_order_p), dpi = 200)
         plt.close()
 
     if save:
