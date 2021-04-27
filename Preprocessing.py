@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 03/07/2021
+# Last Modified Date: 04/27/2021
 # ===============================================================================
 import os
 import sys
@@ -143,6 +143,7 @@ except IndexError:
 
 # Check if this case is already preprocessed
 # ===============================================================================
+max_timesteps = int(10000*WriteProps) # this value is about 10000 strains, may need change if run longer
 if os.path.isfile(filename_prefix + "_parameter.txt"):
     f = open(filename_prefix + "_parameter.txt", 'r')
     pre_parameters = f.readlines()
@@ -150,7 +151,7 @@ if os.path.isfile(filename_prefix + "_parameter.txt"):
     f.close()
 
     if new_data_format_flag:
-        current_timesteps = BinarySearch(path_job+"nodePositions{}.dat", expected_timesteps, WriteProps)
+        current_timesteps = BinarySearch(path_job+"nodePositions{}.dat", max_timesteps, WriteProps)
     else:
         current_timesteps = sum(1 for line in open(path_job+'sphere_props.0.dat'))-1
     
@@ -201,7 +202,7 @@ if new_data_format_flag == 0:
 
     # Get bond0.vtk data here
     # ===============================================================================
-    interval = BinarySearch(path_job+"bond0_t{}.vtk", expected_interval, WriteConfig)
+    interval = BinarySearch(path_job+"bond0_t{}.vtk", max_timesteps, WriteConfig)
     Ypos_t = np.zeros((interval, particle_numbers*points_per_particle))
     for i in range(interval):
         Ypos_t[i, :] = getYpos(int(i*WriteConfig))
@@ -212,7 +213,7 @@ if new_data_format_flag == 0:
 # has bond0_t{}.vtk written in frequency WriteConfig
 # ===============================================================================
 else:
-    timesteps = BinarySearch(path_job+"nodePositions{}.dat", expected_timesteps, WriteProps)
+    timesteps = BinarySearch(path_job+"nodePositions{}.dat", max_timesteps, WriteProps)
     interval = timesteps
     increment = int(bead_number/points_per_particle)
     Ypos_t = np.zeros((timesteps, particle_numbers*points_per_particle))

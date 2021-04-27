@@ -1,23 +1,19 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 02/05/2021
+# Last Modified Date: 04/27/2021
 # ===============================================================================
 import os
 import subprocess
+import time
+import datetime
 
 '''
 This program is a script for preprocessing the data for suspension system
 '''
 
-path = "/raid6/ctliao/Data/HI_ordering/"
+start_time = time.time()
 
-def SendEmail(progress):
-    f = open('email.txt','w')
-    f.write('Subject: Current progress for preprocessing: {}%\n'.format(progress))
-    f.close()
-    command_line = 'sendmail e5n41kb9n@gmail.com  < email.txt'
-    subprocess.Popen(command_line, shell = True)
-    subprocess.run(["sendmail", "e5n41kb9n@gmail.com", "<", "email.txt"])
+path = "/raid6/ctliao/Data/HI_ordering/"
 
 # parser
 def parser(string):
@@ -36,6 +32,7 @@ def parser(string):
     return [phi, Ca, ensemble_id]
 
 
+# collect the job name
 parameter_set = {}
 # create parameter_set (two layer dict)
 for fn in os.listdir(path):
@@ -63,14 +60,26 @@ for phi in parameter_set.keys():
 
 # Preprocessing
 count = 0
+expected_count = number_of_parameter_set
+progress = 0
+
+f_main = open("main.log", "a+")
+f_pre = open("preprocess.log", "a+")
+
 for fn in os.listdir(path):
     if (fn[0] == "h") and (os.path.isdir(path+fn)):
         result = parser(fn)
         if result[0] in phis:
-            subprocess.call(["python3", "Preprocessing.py", fn, "system=1", "verbose=0"])
+            subprocess.call(["python3", "Preprocessing.py", fn, "system=1", "verbose=0"], stdout = f_pre, stderr = f_pre)
             count += 1
-            if (count % int(number_of_parameter_set/10) == 0):
-                print("Current progress is {}%".format(int(count*100/number_of_parameter_set)))
-                #SendEmail(int(count*100/number_of_parameter_set))
 
-#SendEmail(int(count*100/number_of_parameter_set))
+            if count/expected_count >= progress:
+                f_main.write("Progress: {} % ({}/{}) at {}\n".format(round(progress*100), count, expected_count, datetime.datetime.now()))
+                f_main.flush()
+                progress += 0.05
+
+f_main.write("Finish!\n")
+f_main.write("Total time elapsed = {}\n".format(str(datetime.timedelta(seconds=time.time()-start_time))))
+f_main.flush()
+f_main.close()
+f_pre.close()
