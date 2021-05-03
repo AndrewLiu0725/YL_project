@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 04/06/2021
+# Last Modified Date: 05/03/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -74,22 +74,23 @@ for phi in phis:
                     output_dict_EA[phi] = {Ca: [avg_iv_t]}
 
             if PLOT:
-                shear_p = 1026.4*Ca
                 std_iv_t = np.std(iv_data[:ensemble_count, :min_timesteps], axis=0)
                 slicing = 20 # python slicing, used to make plot more readable
 
                 fig, ax1 = plt.subplots(figsize = (8, 6))
-                ax1.errorbar(list(range(min_timesteps))[::slicing], avg_iv_t[::slicing], yerr = std_iv_t[::slicing])
-                ax1.set_xlabel("time", fontsize = 15)
+                ax1.errorbar((np.arange(min_timesteps)[::slicing])*(4000/3669), avg_iv_t[::slicing], yerr = std_iv_t[::slicing])
+                ax1.set_xlabel("time ({})".format(r'$\dot \gamma t$'), fontsize = 15)
                 ax1.set_ylabel(r'$\eta _{int}$', fontsize = 15)
                 ax1.set_title("Intrinsic Viscosity vs Time\nphi = {}, Ca = {}, {} ensembles".format(phi, Ca, ensemble_count), fontsize = 20)
 
+                '''
                 # add second x-axis
                 ax2 = ax1.twiny() # ax1 and ax2 share y-axis
                 ax2.set_xlabel("non-dimensional time scale ({})".format(r'$\dot \gamma t$'), fontsize = 15)
                 ax2.set_xticks(ax1.get_xticks())
                 ax2.set_xbound(ax1.get_xbound())
                 ax2.set_xticklabels([int(x * shear_p) for x in ax1.get_xticks()])
+                '''
                 
                 fig.subplots_adjust(top=0.85)
                 fig.tight_layout()
