@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 04/02/2021
+# Last Modified Date: 04/06/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -130,6 +130,7 @@ def analyzeRelaxationTime(variable_type, system, time_series_type, test_length, 
 
     # collect the relaxation time
     relaxation_time = []
+    relaxation_time_nd = [] # nd stands for non-dinmensional
     total_count = 0
     autoregressive_order_p = 50
     unstationary_ratio = []
@@ -146,16 +147,22 @@ def analyzeRelaxationTime(variable_type, system, time_series_type, test_length, 
                 result = calcRelaxationTime(ts, 0.05, autoregressive_order_p, test_length, 0)
                 if result[0]:
                     relaxation_time.append(np.mean(result[1]))
+                    relaxation_time_nd.append(np.mean(result[1])*1026.4*Ca) # shear rate = 1026.4*Ca, so the stored value is non-dimensional
                 else:
                     unstationary_count += 1
             
             unstationary_ratio.append([phi, Ca, unstationary_count/ensemble_count])
 
     if plot:
-        plt.hist(relaxation_time)
-        plt.xlabel("Relaxation time")
-        plt.ylabel("Count")
-        plt.title("Relaxation Time Histogram\n({}, {}, {}, maxlag = {}, {}%)".format("Intrinsic Viscosity" if variable_type == "IV" else "Doublet Fraction", 
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+
+        ax1.hist(relaxation_time)
+        ax1.set(xlabel = "Relaxation time (t)", ylabel = "Count")
+
+        ax2.hist(relaxation_time_nd)
+        ax2.set(xlabel = "Relaxation time ({})".format(r'$\dot \gamma t$'), ylabel = "Count")
+
+        fig.suptitle("Relaxation Time Histogram\n({}, {}, {}, maxlag = {}, {}%)".format("Intrinsic Viscosity" if variable_type == "IV" else "Doublet Fraction", 
         system, time_series_type, autoregressive_order_p, round(len(relaxation_time)/total_count, 2)*100))
         plt.savefig("./Pictures/{}System_{}_RelaxationTime_{}_p_{}_Histogram.png".format(system, "IntrinsicViscosity" if variable_type == "IV" else "DoubletFraction", 
         time_series_type, autoregressive_order_p), dpi = 200)
