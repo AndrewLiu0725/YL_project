@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 02/21/2021
+# Last Modified Date: 05/06/2021
 # ===============================================================================
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -12,17 +12,16 @@ The data is pre-calculated.
 
 MAKE_PLOT = 1
 
-data = np.load("viscosity_data_0.5.npy")
+data = np.load("Data/viscosity_data_0.5.npy")
 
 # Parameters
 r = 1.0
-ncycle = 2000
-
 vol = 746.3163
 phis  =[]
 for x in range(30, 41):
     phi = 2*vol/(24*x**2)
-    phis.append(float(str(phi*100)[:3]))
+    #phis.append(float(str(phi*100)[:3]))
+    phis.append(round(phi*100, 1))
 phi_range = np.array(phis)
 Ca_range = np.array([i*0.01 for i in range(1, 21)])
 
@@ -40,13 +39,13 @@ for i in range(2): # run over iv and rv
 
 
         plt.title("{} vs Ca (two-cell system)".format(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$'), fontsize = 30)
-        plt.xlabel("Ca", fontsize = 20)
-        plt.xticks(fontsize = 15)
-        plt.ylabel(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', fontsize = 20)
-        plt.yticks(fontsize = 15)
-        plt.legend(fontsize = 15)
+        plt.xlabel("Ca", fontsize = 25)
+        plt.xticks(fontsize = 20)
+        plt.ylabel(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', fontsize = 25)
+        plt.yticks(fontsize = 20)
+        plt.legend(fontsize = 20)
         if MAKE_PLOT:
-            plt.savefig("./Pictures/TwoCellSystem_{}_vs_Ca_{}ErrorBar.png".format("IntrinsicViscosity" if i == 0 else "RelativeViscosity", "with" if j == 0 else "without"), dpi = 300)
+            plt.savefig("./Pictures/Viscosity_vs_phi_Ca/TwoCellSystem_{}_vs_Ca_{}ErrorBar.png".format("IntrinsicViscosity" if i == 0 else "RelativeViscosity", "with" if j == 0 else "without"), dpi = 300)
             plt.close()
         else:
             plt.show()
@@ -65,13 +64,13 @@ for i in range(2): # run over iv and rv
 
 
         plt.title("{} vs {} (two-cell system)".format(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', r'$\phi$'), fontsize = 30)
-        plt.xlabel(r'$\phi$', fontsize = 20)
-        plt.xticks(fontsize = 15)
-        plt.ylabel(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', fontsize = 20)
-        plt.yticks(fontsize = 15)
-        plt.legend(fontsize = 15)
+        plt.xlabel("{} (%)".format(r'$\phi$'), fontsize = 25)
+        plt.xticks(fontsize = 20)
+        plt.ylabel(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', fontsize = 25)
+        plt.yticks(fontsize = 20)
+        plt.legend(fontsize = 20)
         if MAKE_PLOT:
-            plt.savefig("./Pictures/TwoCellSystem_{}_vs_phi_{}ErrorBar.png".format("IntrinsicViscosity" if i == 0 else "RelativeViscosity", "with" if j == 0 else "without"), dpi = 300)
+            plt.savefig("./Pictures/Viscosity_vs_phi_Ca/TwoCellSystem_{}_vs_phi_{}ErrorBar.png".format("IntrinsicViscosity" if i == 0 else "RelativeViscosity", "with" if j == 0 else "without"), dpi = 300)
             plt.close()
         else:
             plt.show()

@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 02/21/2021
+# Last Modified Date: 05/06/2021
 # ===============================================================================
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -10,7 +10,7 @@ This code is to make the plots of intrinsic and relative viscosity vs Ca and phi
 The data is pre-calculated. 
 """
 
-MAKE_PLOT = 1
+MAKE_PLOT = 0
 
 data = {}
 phi_list = [2.3994, 2.9993, 3.4492, 3.8991, 4.9488, 5.9986]
@@ -26,17 +26,17 @@ for i in range(2): # iv or rv
         for phi in phi_list:
             #if phi == 3.4492: continue
             if j == 0:
-                plt.errorbar(data[phi][:, 0], data[phi][:, 1 if i == 0 else 3], yerr = data[phi][:, 2 if i == 0 else 4], label = r'$\phi$'+" = {}%".format(phi), capsize = 2)
+                plt.errorbar(data[phi][:, 0], data[phi][:, 1 if i == 0 else 3], yerr = data[phi][:, 2 if i == 0 else 4], label = r'$\phi$'+" = {}%".format(round(phi, 1)), capsize = 2)
             else:
-                plt.plot(data[phi][:, 0], data[phi][:, 1 if i == 0 else 3], label = r'$\phi$'+" = {}%".format(phi))
+                plt.plot(data[phi][:, 0], data[phi][:, 1 if i == 0 else 3], label = r'$\phi$'+" = {}%".format(round(phi, 1)))
         plt.title("{} vs Ca (suspension system)".format(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$'), fontsize = 30)
-        plt.xlabel("Ca", fontsize = 20)
-        plt.xticks(fontsize = 15)
-        plt.ylabel(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', fontsize = 20)
-        plt.yticks(fontsize = 15)
-        plt.legend(fontsize = 15)
+        plt.xlabel("Ca", fontsize = 25)
+        plt.xticks(fontsize = 20)
+        plt.ylabel(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', fontsize = 25)
+        plt.yticks(fontsize = 20)
+        plt.legend(fontsize = 20)
         if MAKE_PLOT:
-            plt.savefig("./Pictures/Suspension/SuspensionSystem_{}_vs_Ca_{}ErrorBar.png".format("IntrinsicViscosity" if i == 0 else "RelativeViscosity", "with" if j == 0 else "without"), dpi = 300)
+            plt.savefig("./Pictures/Viscosity_vs_phi_Ca/SuspensionSystem_{}_vs_Ca_{}ErrorBar.png".format("IntrinsicViscosity" if i == 0 else "RelativeViscosity", "with" if j == 0 else "without"), dpi = 300)
             plt.close()
         else:
             plt.show()
@@ -58,7 +58,7 @@ for phi_index, phi in enumerate(phi_list):
 #  vs phi plots
 for i in range(2): # iv or rv
     for j in range(2): # with or without errorbar
-        plt.figure(figsize=(12,9))
+        plt.figure(figsize=(12, 9))
 
         for Ca in Ca_list:
             if not Ca in [0.03, 0.08, 0.1, 0.14, 0.18]: continue
@@ -67,13 +67,13 @@ for i in range(2): # iv or rv
             else:
                 plt.plot(data_Ca[Ca][:, 0], data_Ca[Ca][:, 1 if i == 0 else 3], label = "Ca = {}".format(Ca))
         plt.title("{} vs {} (suspension system)".format(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', r'$\phi$'), fontsize = 30)
-        plt.xlabel(r'$\phi$'+"(%)", fontsize = 20)
-        plt.xticks(fontsize = 15)
-        plt.ylabel(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', fontsize = 20)
-        plt.yticks(fontsize = 15)
-        plt.legend(fontsize = 15)
+        plt.xlabel(r'$\phi$'+"(%)", fontsize = 25)
+        plt.xticks(fontsize = 20)
+        plt.ylabel(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', fontsize = 25)
+        plt.yticks(fontsize = 20)
+        plt.legend(fontsize = 20)
         if MAKE_PLOT:
-            plt.savefig("./Pictures/Suspension/SuspensionSystem_{}_vs_phi_{}ErrorBar.png".format("IntrinsicViscosity" if i == 0 else "RelativeViscosity", "with" if j == 0 else "without"), dpi = 300)
+            plt.savefig("./Pictures/Viscosity_vs_phi_Ca/SuspensionSystem_{}_vs_phi_{}ErrorBar.png".format("IntrinsicViscosity" if i == 0 else "RelativeViscosity", "with" if j == 0 else "without"), dpi = 300)
             plt.close()
         else:
             plt.show()
