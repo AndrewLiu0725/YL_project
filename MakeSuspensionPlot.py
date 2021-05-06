@@ -10,25 +10,26 @@ This code is to make the plots of intrinsic and relative viscosity vs Ca and phi
 The data is pre-calculated. 
 """
 
-MAKE_PLOT = 0
+MAKE_PLOT = 1
 
-data = {}
-phi_list = [2.3994, 2.9993, 3.4492, 3.8991, 4.9488, 5.9986]
+data = np.load("Data/suspension_viscosity_0.5.npy")
 
-for phi in phi_list:
-    data[phi] = np.loadtxt("./Data/data/phi{}.txt".format(str(phi)))
+# Parameters
+phi_range = [2.3994, 2.9993, 3.4492, 3.8991, 4.9488, 5.9986]
+Ca_range = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2]
 
-# vs Ca plot
-for i in range(2): # iv or rv
-    for j in range(2): # with or without errorbar
+### vs Ca
+for i in range(2): # run over iv and rv
+    for j in range(2): # with or wihtout errorbar
         plt.figure(figsize=(12,9))
-
-        for phi in phi_list:
-            #if phi == 3.4492: continue
+        for phi_index, phi in enumerate(phi_range):
+            phi = round(phi, 1)
             if j == 0:
-                plt.errorbar(data[phi][:, 0], data[phi][:, 1 if i == 0 else 3], yerr = data[phi][:, 2 if i == 0 else 4], label = r'$\phi$'+" = {}%".format(round(phi, 1)), capsize = 2)
+                plt.errorbar(Ca_range, data[i, 0, phi_index, :], yerr = data[i, 1, phi_index, :], label = r'$\phi$'+' = {}%'.format(phi), capsize = 2)
             else:
-                plt.plot(data[phi][:, 0], data[phi][:, 1 if i == 0 else 3], label = r'$\phi$'+" = {}%".format(round(phi, 1)))
+                plt.plot(Ca_range, data[i, 0, phi_index, :], label = r'$\phi$'+' = {}%'.format(phi))
+
+
         plt.title("{} vs Ca (suspension system)".format(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$'), fontsize = 30)
         plt.xlabel("Ca", fontsize = 25)
         plt.xticks(fontsize = 20)
@@ -41,33 +42,21 @@ for i in range(2): # iv or rv
         else:
             plt.show()
 
-
-
-
-Ca_list = data[phi_list[0]][:, 0]
-data_Ca = {}
-for Ca in Ca_list:
-    data_Ca[Ca] = np.zeros((len(phi_list), 5))
-
-for phi_index, phi in enumerate(phi_list):
-    for Ca_index, Ca in enumerate(Ca_list):
-        data_Ca[Ca][phi_index, 0] = phi
-        data_Ca[Ca][phi_index, 1:] = data[phi][Ca_index, 1:]
-
-
-#  vs phi plots
-for i in range(2): # iv or rv
-    for j in range(2): # with or without errorbar
-        plt.figure(figsize=(12, 9))
-
-        for Ca in Ca_list:
+### vs phi
+for i in range(2): # run over iv and rv
+    for j in range(2): # with or wihtout errorbar
+        plt.figure(figsize=(12,9))
+        for Ca_index, Ca in enumerate(Ca_range):
             if not Ca in [0.03, 0.08, 0.1, 0.14, 0.18]: continue
+            #if Ca_index % 4 != 0: continue
             if j == 0:
-                plt.errorbar(data_Ca[Ca][:, 0], data_Ca[Ca][:, 1 if i == 0 else 3], yerr = data_Ca[Ca][:, 2 if i == 0 else 4], label = "Ca = {}".format(Ca), capsize = 2)
+                plt.errorbar(phi_range, data[i, 0, :, Ca_index], yerr = data[i, 1, :, Ca_index], label = 'Ca = {}'.format(Ca), capsize = 2)
             else:
-                plt.plot(data_Ca[Ca][:, 0], data_Ca[Ca][:, 1 if i == 0 else 3], label = "Ca = {}".format(Ca))
+                plt.plot(phi_range, data[i, 0, :, Ca_index], label = 'Ca = {}'.format(Ca))
+
+
         plt.title("{} vs {} (suspension system)".format(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', r'$\phi$'), fontsize = 30)
-        plt.xlabel(r'$\phi$'+"(%)", fontsize = 25)
+        plt.xlabel("{} (%)".format(r'$\phi$'), fontsize = 25)
         plt.xticks(fontsize = 20)
         plt.ylabel(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', fontsize = 25)
         plt.yticks(fontsize = 20)
