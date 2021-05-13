@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 05/03/2021
+# Last Modified Date: 05/12/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,7 +17,7 @@ It also provides flags to save the ensemble averaged and individual time series.
 """
 
 SAVE_ENSEMBLE_AVERAGED = 1
-SAVE_INDIVIDUAL = 1
+SAVE_INDIVIDUAL = 0
 PLOT = 1
 print("FLAGS: SAVE_ENSEMBLE_AVERAGED = {}, SAVE_INDIVIDUAL = {}, PLOT = {}".format(SAVE_ENSEMBLE_AVERAGED, SAVE_INDIVIDUAL, PLOT))
 
@@ -88,7 +88,6 @@ for phi in phi_range:
                     output_dict_EA[phi] = {Ca: [avg_iv_t]}
 
             if PLOT:
-                shear_p = 1026.4*Ca
                 std_iv_t = np.std(data[:ensemble_count, :], axis=0)
                 slicing = 40 # python slicing, used to make plot more readable. recommend value: 0.005*ncycle
                 
