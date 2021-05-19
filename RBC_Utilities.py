@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 03/13/2021
+# Last Modified Date: 05/17/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -212,13 +212,15 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
 
 
 
-def getStress(input_phi, input_Ca, stress_category_id, timestep_start, timestep_end, depend, system):
+def getStress(input_phi, input_Ca, stress_category_id, ncycle, depend, system):
     """
     Input:
 
     input_phi is in percentage unit
 
     stress_category_id = 0 means elastic stress tensor, 1 means inter-particle stress tensor
+
+    ncycle is only meaningful for two-cell system, i.e. system = 1
 
     system = 0 means two-cell system, 1 means suspension
 
@@ -246,7 +248,7 @@ def getStress(input_phi, input_Ca, stress_category_id, timestep_start, timestep_
     # Two-cell system
     if system == 0:
         angle = depend
-        path = path_AJ + "phi_{}_Re_0.1_Ca_{}_aggregation_1KT_ncycle_2000_np_2_angle_{}/data/{}.dat".format(phi, Ca, angle, stress_category[stress_category_id])
+        path = path_AJ + "phi_{}_Re_0.1_Ca_{}_aggregation_1KT_ncycle_{}_np_2_angle_{}/data/{}.dat".format(phi, Ca, ncycle, angle, stress_category[stress_category_id])
     
     # Suspesion system
     else:
@@ -259,7 +261,7 @@ def getStress(input_phi, input_Ca, stress_category_id, timestep_start, timestep_
     # Output and Error Handling
     # ===============================================================================
     try:
-        stress = np.loadtxt(path, skiprows = int(timestep_start+2), max_rows = int(timestep_end-timestep_start))
+        stress = np.loadtxt(path, skiprows = 2)
 
     except StopIteration:
         logging.error(" getStress():\nWrong value of timestep_start/timestep_end: {}\n".format(path))
