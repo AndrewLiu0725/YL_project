@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 03/29/2021
+# Last Modified Date: 04/02/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -46,7 +46,7 @@ def findBorder(target, value):
                 left = mid+1
     return [target[mid], target[mid+1]]
 
-def makePlot(system, division_type, unstationary_symbol_style):
+def makePlot(variable_type, system, division_type, unstationary_symbol_style, alpha):
     """
     Input:
 
@@ -55,8 +55,8 @@ def makePlot(system, division_type, unstationary_symbol_style):
 
     # setup
     threshold = 0.1 # threshold for the ratio of the set of parameters to be marked as unstationry
-    print("Current task:\nsystem:{}, division_type:{}, unstationary_symbol_style:{}"
-    .format(system, division_type, "equal" if unstationary_symbol_style else "filled"))
+    print("Current task:\nvariable_type:{}, system:{}, division_type:{}, unstationary_symbol_style:{}, alpha:{}"
+    .format(variable_type, system, division_type, "equal" if unstationary_symbol_style else "filled", alpha))
 
 
 
@@ -65,7 +65,7 @@ def makePlot(system, division_type, unstationary_symbol_style):
         data_PD = pickle.load(handle)
 
     # get the positions of the unstationary cases
-    with open("Data/UnstationaryRatio_{}_{}.pickle".format(system, division_type), 'rb') as handle:
+    with open("Data/UnstationaryRatio{}{}_{}_alpha_{}_p_20.pickle".format("_IV_" if variable_type == "IV" else "_", system, division_type, alpha), 'rb') as handle:
         unstationary_ratio = pickle.load(handle) # format: [phi, Ca, unstationary ratio]
         unstationary_case = []
         for point in unstationary_ratio:
@@ -102,15 +102,19 @@ def makePlot(system, division_type, unstationary_symbol_style):
     ax.legend(handles = [void_marker], bbox_to_anchor=(1.05, 1.05), loc='upper left', prop={'size': 20})
 
     fig.tight_layout()
-    plt.savefig('./Pictures/{}System_PhaseDiagram_UnstationarySymbolAdded_{}_SymbolStyle_{}.png'.format(system, division_type, unstationary_symbol_style), dpi = 200)
+    plt.savefig('./Pictures/PhaseDiagram_UnstationarySymbolAdded/{}System_PhaseDiagram_UnstationarySymbolAdded_{}_{}_alpha_{}_SymbolStyle_{}.png'.format(
+        system, "IntrinsicViscosity" if variable_type == "IV" else "DoubletFraction",division_type, alpha, unstationary_symbol_style), dpi = 200)
     #plt.show()
 
 
 
 if __name__ == "__main__":
     system_list = ["Suspension", "TwoCell"]
-    division_type_list = ["EnsembleAveraged", "Indivisual"]
+    #system_list = ["Suspension"]
+    #division_type_list = ["EnsembleAveraged", "Indivisual"]
+    division_type_list = ["EnsembleAveraged"]
     for system in system_list:
         for division_type in division_type_list:
-            for unstationary_symbol_style in [0, 1]:
-                makePlot(system, division_type, unstationary_symbol_style)
+            for alpha in [0.1]:
+                for unstationary_symbol_style in [0, 1]:
+                    makePlot("IV", system, division_type, unstationary_symbol_style, alpha)
