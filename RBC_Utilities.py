@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 05/17/2021
+# Last Modified Date: 06/10/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -118,9 +118,9 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
     # ===============================================================================
     # Format of Ypos_t is Ypos_t[t, node_id]
     Periods = np.zeros(particle_numbers*points_per_particle)
+    offset = int(0.0125*timesteps) # igonre frequency lower than 0.0125, i.e. rotation time > 80 starins
 
     for i in range(particle_numbers*points_per_particle):
-        offset = 10 # igonre the physically impossible high frequency regime
         P = np.fft.rfft(Ypos_t[:, i])
         Periods[i] = (interval)/(np.argmax(np.abs(P[offset:]))+offset) # divide timesteps by 2 since here is the number of the timesteps of bond0.vtk
 
@@ -128,7 +128,8 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
     # in old output format, time unit in nodeposition format = WriteConfig and time unit in COM format = WriteProps
     # in new output format, time unit in nodeposition format = time unit in COM format = WriteProps
     # Updated Date: 01/29/2021 by An-Jun Liu
-    rotation_time = stats.gmean(Periods)*(timesteps/interval) 
+    #rotation_time = stats.gmean(Periods)*(timesteps/interval) 
+    rotation_time = stats.trim_mean(Periods, 0.1)*(timesteps/interval) # remove the possible outliers
 
 
 
