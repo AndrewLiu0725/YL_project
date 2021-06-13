@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 06/10/2021
+# Last Modified Date: 06/13/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -62,7 +62,7 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
     """
 
     # C extension
-    lib = ctypes.cdll.LoadLibrary('./cforDoublet_Functions.so')
+    lib = ctypes.cdll.LoadLibrary('./RBC_Utilities_CExtension.so')
 
     # Parameter
     # ===============================================================================
@@ -118,18 +118,13 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
     # ===============================================================================
     # Format of Ypos_t is Ypos_t[t, node_id]
     Periods = np.zeros(particle_numbers*points_per_particle)
-    offset = int(0.0125*timesteps) # igonre frequency lower than 0.0125, i.e. rotation time > 80 starins
+    offset = int(0.0125*timesteps + 1) # igonre frequency lower than 0.0125, i.e. rotation time > 80 starins
 
     for i in range(particle_numbers*points_per_particle):
-        P = np.fft.rfft(Ypos_t[:, i])
-        Periods[i] = (interval)/(np.argmax(np.abs(P[offset:]))+offset) # divide timesteps by 2 since here is the number of the timesteps of bond0.vtk
+        P = np.fft.rfft((Ypos_t[:, i] - np.mean(Ypos_t[:, i]))) # remove the DC term to eliminate the large amplitude 0 Hz component
+        Periods[i] = timesteps/(np.argmax(np.abs(P[offset:]))+offset) # use timesteps instead of interval to avoid redundant computation
 
-    # convert from the time unit in nodeposition format to COM format
-    # in old output format, time unit in nodeposition format = WriteConfig and time unit in COM format = WriteProps
-    # in new output format, time unit in nodeposition format = time unit in COM format = WriteProps
-    # Updated Date: 01/29/2021 by An-Jun Liu
-    #rotation_time = stats.gmean(Periods)*(timesteps/interval) 
-    rotation_time = stats.trim_mean(Periods, 0.1)*(timesteps/interval) # remove the possible outliers
+    rotation_time = stats.trim_mean(Periods, 0.1) # remove the possible outliers
 
 
 
