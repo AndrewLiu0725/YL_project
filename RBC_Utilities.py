@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 06/13/2021
+# Last Modified Date: 06/14/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -118,11 +118,12 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
     # ===============================================================================
     # Format of Ypos_t is Ypos_t[t, node_id]
     Periods = np.zeros(particle_numbers*points_per_particle)
-    offset = int(0.0125*timesteps + 1) # igonre frequency lower than 0.0125, i.e. rotation time > 80 starins
+    cutoff_frequency = 0.0135
+    cutoff = int(cutoff_frequency*timesteps + 1) # igonre frequency lower than cutoff_frequency, i.e. rotation time > 1/cutoff_frequency starins
 
     for i in range(particle_numbers*points_per_particle):
         P = np.fft.rfft((Ypos_t[:, i] - np.mean(Ypos_t[:, i]))) # remove the DC term to eliminate the large amplitude 0 Hz component
-        Periods[i] = timesteps/(np.argmax(np.abs(P[offset:]))+offset) # use timesteps instead of interval to avoid redundant computation
+        Periods[i] = timesteps/(np.argmax(np.abs(P[cutoff:]))+cutoff) # use timesteps instead of interval to avoid redundant computation
 
     rotation_time = stats.trim_mean(Periods, 0.1) # remove the possible outliers
 

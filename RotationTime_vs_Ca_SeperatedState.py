@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 06/13/2021
+# Last Modified Date: 06/14/2021
 # ===============================================================================
 import numpy as np 
 import ctypes
@@ -12,6 +12,11 @@ import matplotlib.pyplot as plt
 from RBC_Utilities import getSuspensionParameterSets
 import time
 import datetime
+
+"""
+This code is to make the system's roation time (seperate doublet and siglets state) vs Ca 
+with varied volume fractions for suspension and two-cell system.
+"""
 
 path_preprocess = "/userdata4/ajliu/Data_Transfer/"
 path_CT = "/raid6/ctliao/Data/HI_ordering/"
@@ -76,7 +81,8 @@ def getRotationTime(input_phi, input_Ca, input_criteria_T, input_criteria_Dms, d
     # ===============================================================================
     # Format of Ypos_t is Ypos_t[t, node_id]
     Periods = np.zeros(particle_numbers*points_per_particle)
-    cutoff = int(0.0125*timesteps + 1) # igonre frequency lower than 0.0125, i.e. rotation time > 80 starins
+    cutoff_frequency = 0.0135
+    cutoff = int(cutoff_frequency*timesteps + 1) # igonre frequency lower than cutoff_frequency, i.e. rotation time > 1/cutoff_frequency starins
 
     for i in range(particle_numbers*points_per_particle):
         P = np.fft.rfft((Ypos_t[:, i] - np.mean(Ypos_t[:, i]))) # remove the DC term
@@ -118,6 +124,9 @@ def getRotationTime(input_phi, input_Ca, input_criteria_T, input_criteria_Dms, d
     criteria_T = input_criteria_T
     period = int(round(criteria_T*rotation_time))
     DF_indivisual = np.zeros((particle_numbers, timesteps-period))
+    window_width = 100
+    threshold = 0.9
+    target1, target2 = int(window_width*threshold), int(window_width*(1-threshold))
 
     for criteria_Dm in criteria_Dms:
         doublet_or_not = np.zeros((number_of_pairs, timesteps - period), dtype = np.int32) # 1 means there is a doublet
@@ -142,9 +151,6 @@ def getRotationTime(input_phi, input_Ca, input_criteria_T, input_criteria_Dms, d
                     DF_indivisual[k, t] = 1
 
         # calculate the rotation time of doublet and singlet state for each particle
-        window_width = 100
-        threshold = 0.9
-        target1, target2 = int(window_width*threshold), int(window_width*(1-threshold))
         t_rot_stat = [[], []] # [[singlet], [doublet]]
 
         for i in range(particle_numbers):
@@ -190,7 +196,7 @@ def getRotationTime(input_phi, input_Ca, input_criteria_T, input_criteria_Dms, d
             # calculate rotation time
             for slice in split:
                 for j in range(points_per_particle):
-                    cutoff = int(0.0125*(slice[1]-slice[0]) + 1)
+                    cutoff = int(cutoff_frequency*(slice[1]-slice[0]) + 1)
                     P = np.fft.rfft((Ypos_t[int(slice[0]/scale):int(slice[1]/scale), i] - np.mean(Ypos_t[int(slice[0]/scale):int(slice[1]/scale), i]))) # remove the DC term
                     t_rot_stat[slice[2]].append((slice[1]-slice[0])/(np.argmax(np.abs(P[cutoff:]))+cutoff))
         
@@ -210,11 +216,18 @@ Ca_range = [i*0.01 for i in range(1, 21)]
 angle_range = [90 - 10*j for j in range(18)]
 phi_range.sort()
 
-fig, ax = plt.subplots(figsize = (8, 6))
+fig1, ax1 = plt.subplots(figsize = (9, 6))
+fig2, ax2 = plt.subplots(figsize = (9, 6))
+fig3, ax3 = plt.subplots(figsize = (9, 6))
+
+ax_list = [ax1, ax2, ax3]
+fig_list = [fig1, fig2, fig3]
+pic_name_suffix = ["", "_DoubletOnly", "_SingletsOnly"]
 
 for phi_index, phi in enumerate(phi_range):
     if phi_index % 3 != 0: continue
     t_rot = [[], []]
+    t_rot_std = [[], []]
     Cas = [[], []]
 
     for Ca_index, Ca in enumerate(Ca_range):
@@ -227,20 +240,42 @@ for phi_index, phi in enumerate(phi_range):
         for i in range(2):
             if len(tmp_t_rot[i]) > 0:
                 t_rot[i].append(np.mean(tmp_t_rot[i]))
+                t_rot_std[i].append(np.std(tmp_t_rot[i]))
                 Cas[i].append(Ca)
 
-    ax.plot(Cas[0], t_rot[0], label = '{} = {}% - {}'.format(r'$\phi$', round(phi,1), "singlets"))
-    ax.plot(Cas[1], t_rot[1], linestyle = '--', color = ax.get_lines()[-1].get_c(), label = '{} = {}% - {}'.format(r'$\phi$', round(phi,1), "doublet"))
+    for ax_id, ax in enumerate(ax_list):
+        if ax_id == 0:
+            ax.errorbar(Cas[0], t_rot[0], yerr = t_rot_std[0], 
+            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "singlets"), capsize = 2)
+            ax.errorbar(Cas[1], t_rot[1], yerr = t_rot_std[1], linestyle = '--', color = ax.get_lines()[-1].get_c(), 
+            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "doublet"), capsize = 2)
+        elif ax_id == 1:
+            ax.errorbar(Cas[1], t_rot[1], yerr = t_rot_std[1], 
+            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "doublet"), capsize = 2)
+        else:
+            ax.errorbar(Cas[0], t_rot[0], yerr = t_rot_std[0], 
+            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "singlets"), capsize = 2)
 
-ax.set_title("Rotation Time vs Ca (Two-Cell System)", fontsize = 20)
-ax.set_xlabel("Ca", fontsize = 12)
-ax.set_ylabel("Rotation Time ({})".format(r'$\dot \gamma t$'), fontsize = 12)
-ax.legend(fontsize = 12)
-plt.savefig("Pictures/TwoCellSystem_RotationTime_vs_Ca.png", dpi = 200)
+for ax_id, ax in enumerate(ax_list):
+    ax.set_title("Rotation Time vs Ca (Two-Cell System)", fontsize = 20)
+    ax.set_xlabel("Ca", fontsize = 12)
+    ax.set_ylabel("Rotation Time ({})".format(r'$\dot \gamma t$'), fontsize = 12)
+    ax.legend(fontsize = 12, bbox_to_anchor=(1.05, 1), loc='upper left')
+    fig_list[ax_id].tight_layout()
+    fig_list[ax_id].savefig("Pictures/TwoCellSystem_RotationTime_vs_Ca{}.png".format(pic_name_suffix[ax_id]), dpi = 200)
 plt.close()
 
+
+
 ### Suspension
-fig, ax = plt.subplots(figsize = (8, 6))
+fig1, ax1 = plt.subplots(figsize = (9, 6))
+fig2, ax2 = plt.subplots(figsize = (9, 6))
+fig3, ax3 = plt.subplots(figsize = (9, 6))
+
+ax_list = [ax1, ax2, ax3]
+fig_list = [fig1, fig2, fig3]
+pic_name_suffix = ["", "_DoubletOnly", "_SingletsOnly"]
+
 [phis, parameter_set] = getSuspensionParameterSets()
 phis.sort()
 for phi in phis:
@@ -248,6 +283,7 @@ for phi in phis:
     Ca_range.sort()
 
     t_rot = [[], []]
+    t_rot_std = [[], []]
     Cas = [[], []]
 
     for Ca_index, Ca in enumerate(Ca_range):
@@ -264,16 +300,29 @@ for phi in phis:
         for i in range(2):
             if len(tmp_t_rot[i]) > 0:
                 t_rot[i].append(np.mean(tmp_t_rot[i]))
+                t_rot_std[i].append(np.std(tmp_t_rot[i]))
                 Cas[i].append(Ca)
 
-    ax.plot(Cas[0], t_rot[0], label = '{} = {}% - {}'.format(r'$\phi$', round(phi,1), "singlets"))
-    ax.plot(Cas[1], t_rot[1], linestyle = '--', color = ax.get_lines()[-1].get_c(), label = '{} = {}% - {}'.format(r'$\phi$', round(phi,1), "doublet"))
+    for ax_id, ax in enumerate(ax_list):
+        if ax_id == 0:
+            ax.errorbar(Cas[0], t_rot[0], yerr = t_rot_std[0], 
+            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "singlets"), capsize = 2)
+            ax.errorbar(Cas[1], t_rot[1], yerr = t_rot_std[1], linestyle = '--', color = ax.get_lines()[-1].get_c(), 
+            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "doublet"), capsize = 2)
+        elif ax_id == 1:
+            ax.errorbar(Cas[1], t_rot[1], yerr = t_rot_std[1], 
+            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "doublet"), capsize = 2)
+        else:
+            ax.errorbar(Cas[0], t_rot[0], yerr = t_rot_std[0], 
+            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "singlets"), capsize = 2)
 
-ax.set_title("Rotation Time vs Ca (Suspension System)", fontsize = 20)
-ax.set_xlabel("Ca", fontsize = 12)
-ax.set_ylabel("Rotation Time ({})".format(r'$\dot \gamma t$'), fontsize = 12)
-ax.legend(fontsize = 12)
-plt.savefig("Pictures/SuspensionSystem_RotationTime_vs_Ca.png", dpi = 200)
+for ax_id, ax in enumerate(ax_list):
+    ax.set_title("Rotation Time vs Ca (Suspension System)", fontsize = 20)
+    ax.set_xlabel("Ca", fontsize = 12)
+    ax.set_ylabel("Rotation Time ({})".format(r'$\dot \gamma t$'), fontsize = 12)
+    ax.legend(fontsize = 12)
+    fig_list[ax_id].tight_layout()
+    fig_list[ax_id].savefig("Pictures/SuspensionSystem_RotationTime_vs_Ca{}.png".format(pic_name_suffix[ax_id]), dpi = 200)
 plt.close()
 
 print('Total time elapsed = {}'.format(str(datetime.timedelta(seconds=time.time()-start_time))))

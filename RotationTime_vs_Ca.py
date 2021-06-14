@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 06/10/2021
+# Last Modified Date: 06/14/2021
 # ===============================================================================
 import numpy as np 
 import ctypes
@@ -11,7 +11,8 @@ import matplotlib.pyplot as plt
 from RBC_Utilities import getSuspensionParameterSets
 
 """
-This code is to make the system's roation time vs Ca with varied volume fractions for suspension and two-cell system.
+This code is to make the system's roation time vs Ca 
+with varied volume fractions for suspension and two-cell system.
 """
 
 path_preprocess = "/userdata4/ajliu/Data_Transfer/"
@@ -77,10 +78,11 @@ def getRotationRate(input_phi, input_Ca, input_criteria_T, input_criteria_Dms, m
     # Format of Ypos_t is Ypos_t[t, node_id]
     Periods = np.zeros(particle_numbers*points_per_particle)
 
-    offset = int(0.0125*timesteps)
+    cutoff_frequency = 0.0135
+    cutoff = int(cutoff_frequency*timesteps + 1) # igonre frequency lower than cutoff_frequency, i.e. rotation time > 1/cutoff_frequency starins
     for i in range(particle_numbers*points_per_particle):
-        P = np.fft.rfft(Ypos_t[:, i])
-        Periods[i] = interval/(np.argmax(np.abs(P[offset:]))+offset) # divide timesteps by 2 since here is the number of the timesteps of bond0.vtk
+        P = np.fft.rfft((Ypos_t[:, i] - np.mean(Ypos_t[:, i])))
+        Periods[i] = interval/(np.argmax(np.abs(P[cutoff:]))+cutoff) # divide timesteps by 2 since here is the number of the timesteps of bond0.vtk
 
     # convert from the time unit in nodeposition format to COM format
     # in old output format, time unit in nodeposition format = WriteConfig and time unit in COM format = WriteProps
@@ -117,7 +119,7 @@ ax.set_title("Rotation Time vs Ca (Two-Cell System)", fontsize = 20)
 ax.set_xlabel("Ca", fontsize = 12)
 ax.set_ylabel("Rotation Time ({})".format(r'$\dot \gamma t$'), fontsize = 12)
 ax.legend(fontsize = 12)
-plt.savefig("Pictures/TwoCellSystem_RotationTime_vs_Ca.png", dpi = 200)
+plt.savefig("Pictures/TwoCellSystem_RotationTime_vs_Ca_Unseperated.png", dpi = 200)
 plt.close()
 
 ### Suspension
@@ -143,5 +145,5 @@ ax.set_title("Rotation Time vs Ca (Suspension System)", fontsize = 20)
 ax.set_xlabel("Ca", fontsize = 12)
 ax.set_ylabel("Rotation Time ({})".format(r'$\dot \gamma t$'), fontsize = 12)
 ax.legend(fontsize = 12)
-plt.savefig("Pictures/SuspensionSystem_RotationTime_vs_Ca.png", dpi = 200)
+plt.savefig("Pictures/SuspensionSystem_RotationTime_vs_Ca_Unseperated.png", dpi = 200)
 plt.close()
