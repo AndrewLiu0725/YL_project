@@ -123,7 +123,15 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
 
     for i in range(particle_numbers*points_per_particle):
         P = np.fft.rfft((Ypos_t[:, i] - np.mean(Ypos_t[:, i]))) # remove the DC term to eliminate the large amplitude 0 Hz component
-        Periods[i] = timesteps/(np.argmax(np.abs(P[cutoff:]))+cutoff) # use timesteps instead of interval to avoid redundant computation
+        Periods[i] = timesteps/(np.argmax(np.abs(P[cutoff:]))+cutoff)
+        '''
+        math:
+        f = [0, 1/nd, ..., (n/2)/nd] where nd is fixed as the real time interval 
+        and f's unit is also in real time (i.e. strains).
+        Thus, f_cutoff = i_cutoff / nd -> i_cutoff = f_cutoff x timesteps
+        Moreover, period = 1/f = 1/((i_max+i_cutoff)/nd) = timesteps / (i_max+i_cutoff)
+        '''
+
 
     rotation_time = stats.trim_mean(Periods, 0.1) # remove the possible outliers
 
