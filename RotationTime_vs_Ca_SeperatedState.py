@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 06/14/2021
+# Last Modified Date: 07/02/2021
 # ===============================================================================
 import numpy as np 
 import ctypes
@@ -196,8 +196,9 @@ def getRotationTime(input_phi, input_Ca, input_criteria_T, input_criteria_Dms, d
             # calculate rotation time
             for slice in split:
                 for j in range(points_per_particle):
+                    node_id = i*points_per_particle + j
                     cutoff = int(cutoff_frequency*(slice[1]-slice[0]) + 1)
-                    P = np.fft.rfft((Ypos_t[int(slice[0]/scale):int(slice[1]/scale), i] - np.mean(Ypos_t[int(slice[0]/scale):int(slice[1]/scale), i]))) # remove the DC term
+                    P = np.fft.rfft((Ypos_t[int(slice[0]/scale):int(slice[1]/scale), node_id] - np.mean(Ypos_t[int(slice[0]/scale):int(slice[1]/scale), node_id]))) # remove the DC term
                     t_rot_stat[slice[2]].append((slice[1]-slice[0])/(np.argmax(np.abs(P[cutoff:]))+cutoff))
         
         return [stats.trim_mean(t_rot_stat[0], 0.1), stats.trim_mean(t_rot_stat[1], 0.1)] # [[singlet], [doublet]]
@@ -245,9 +246,9 @@ for phi_index, phi in enumerate(phi_range):
 
     for ax_id, ax in enumerate(ax_list):
         if ax_id == 0:
-            ax.errorbar(Cas[0], t_rot[0], yerr = t_rot_std[0], 
+            ax.errorbar(Cas[0], t_rot[0], 
             label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "singlets"), capsize = 2)
-            ax.errorbar(Cas[1], t_rot[1], yerr = t_rot_std[1], linestyle = '--', color = ax.get_lines()[-1].get_c(), 
+            ax.errorbar(Cas[1], t_rot[1], linestyle = '--', color = ax.get_lines()[-1].get_c(), 
             label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "doublet"), capsize = 2)
         elif ax_id == 1:
             ax.errorbar(Cas[1], t_rot[1], yerr = t_rot_std[1], 
@@ -278,6 +279,9 @@ pic_name_suffix = ["", "_DoubletOnly", "_SingletsOnly"]
 
 [phis, parameter_set] = getSuspensionParameterSets()
 phis.sort()
+
+scale_factor = 4000/3669
+
 for phi in phis:
     Ca_range = list(parameter_set[phi].keys())
     Ca_range.sort()
@@ -293,7 +297,7 @@ for phi in phis:
                 result = getRotationTime(phi, Ca, 1, 1, ensemble_id, 1)
                 for i in range(2):
                     if not math.isnan(result[i]):
-                        tmp_t_rot[i].append(result[i])
+                        tmp_t_rot[i].append(result[i]*scale_factor)
             except:
                 pass
 
@@ -305,9 +309,9 @@ for phi in phis:
 
     for ax_id, ax in enumerate(ax_list):
         if ax_id == 0:
-            ax.errorbar(Cas[0], t_rot[0], yerr = t_rot_std[0], 
+            ax.errorbar(Cas[0], t_rot[0], 
             label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "singlets"), capsize = 2)
-            ax.errorbar(Cas[1], t_rot[1], yerr = t_rot_std[1], linestyle = '--', color = ax.get_lines()[-1].get_c(), 
+            ax.errorbar(Cas[1], t_rot[1], linestyle = '--', color = ax.get_lines()[-1].get_c(), 
             label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "doublet"), capsize = 2)
         elif ax_id == 1:
             ax.errorbar(Cas[1], t_rot[1], yerr = t_rot_std[1], 
@@ -320,7 +324,7 @@ for ax_id, ax in enumerate(ax_list):
     ax.set_title("Rotation Time vs Ca (Suspension System)", fontsize = 20)
     ax.set_xlabel("Ca", fontsize = 12)
     ax.set_ylabel("Rotation Time ({})".format(r'$\dot \gamma t$'), fontsize = 12)
-    ax.legend(fontsize = 12)
+    ax.legend(fontsize = 12, bbox_to_anchor=(1.05, 1), loc='upper left')
     fig_list[ax_id].tight_layout()
     fig_list[ax_id].savefig("Pictures/SuspensionSystem_RotationTime_vs_Ca{}.png".format(pic_name_suffix[ax_id]), dpi = 200)
 plt.close()
