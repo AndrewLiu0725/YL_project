@@ -103,12 +103,13 @@ for x in range(30, 41):
     phi_range.append(float(str(phi*100)[:3]))
 Ca_range = [i*0.01 for i in range(1, 21)]
 angle_range = [90 - 10*j for j in range(18)]
+phi_range.sort()
 
 
-fig, ax = plt.subplots(figsize = (8, 6))
+fig, ax = plt.subplots(figsize = (9, 6))
 
 for phi_index, phi in enumerate(phi_range):
-    if phi_index % 2 != 0: continue
+    if phi_index % 3 != 0: continue
     t_rot = np.zeros(len(Ca_range))
     for Ca_index, Ca in enumerate(Ca_range):
         for angle_index, angle in enumerate(angle_range):
@@ -118,15 +119,17 @@ for phi_index, phi in enumerate(phi_range):
 ax.set_title("Rotation Time vs Ca (Two-Cell System)", fontsize = 20)
 ax.set_xlabel("Ca", fontsize = 12)
 ax.set_ylabel("Rotation Time ({})".format(r'$\dot \gamma t$'), fontsize = 12)
-ax.legend(fontsize = 12)
+ax.legend(fontsize = 12, bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.tight_layout()
 plt.savefig("Pictures/TwoCellSystem_RotationTime_vs_Ca_Unseperated.png", dpi = 200)
 plt.close()
 
 ### Suspension
-fig, ax = plt.subplots(figsize = (8, 6))
+fig, ax = plt.subplots(figsize = (9, 6))
 [phis, parameter_set] = getSuspensionParameterSets()
 phis.sort()
-for phi in phis:
+for phi_index, phi in enumerate(phis):
+    if phi_index in [0, 2]: continue
     t_rot = np.zeros(len(list(parameter_set[phi].keys())))
     Ca_range = list(parameter_set[phi].keys())
     Ca_range.sort()
@@ -144,6 +147,7 @@ for phi in phis:
 ax.set_title("Rotation Time vs Ca (Suspension System)", fontsize = 20)
 ax.set_xlabel("Ca", fontsize = 12)
 ax.set_ylabel("Rotation Time ({})".format(r'$\dot \gamma t$'), fontsize = 12)
-ax.legend(fontsize = 12)
+ax.legend(fontsize = 12, bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.tight_layout()
 plt.savefig("Pictures/SuspensionSystem_RotationTime_vs_Ca_Unseperated.png", dpi = 200)
 plt.close()
