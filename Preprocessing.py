@@ -1,11 +1,10 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 04/27/2021
+# Last Modified Date: 08/02/2021
 # ===============================================================================
 import os
 import sys
-import numpy as np 
-import time
+import numpy as np
 import logging
 
 DEBUG = 0
@@ -226,12 +225,12 @@ else:
         for j in range(particle_numbers*points_per_particle):
             Ypos_t[i, j] = data[j*increment, 1]
 
-        # COMS_NB and COMs_NB
+        # COMS and COMs_NB
         for j in range(particle_numbers):
             COMs_NB[j, i, :] = np.sum(data[j*bead_number:(j+1)*bead_number, :], axis = 0)/bead_number
             COMs[j, i, 1] = COMs_NB[j, i, 1]
-            COMs[j, i, 0] = np.sum(np.mod(data[j*bead_number:(j+1)*bead_number, 0], dim[0]))/bead_number
-            COMs[j, i, 2] = np.sum(np.mod(data[j*bead_number:(j+1)*bead_number, 2], dim[2]))/bead_number
+            COMs[j, i, 0] = COMs_NB[j, i, 0] % dim[0]
+            COMs[j, i, 2] = COMs_NB[j, i, 2] % dim[2]
 
 if (timesteps < expected_timesteps) and verbose:
     logging.warning(" Job \"{}\" is incomplete!".format(job_name))
