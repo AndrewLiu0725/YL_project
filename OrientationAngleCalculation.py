@@ -76,6 +76,8 @@ def calcOrientationAngle(path, numberParticle, return_type):
 
     return [coms, principalAxes] if return_type else orientationAngles
 
+
+
 def calcEnsembleAvergaedOrientationAngle(phi, Ca, ensemble_id):
     # get the particle numbers and time steps
     job_name = "h24phi{}Re0.1Ca{}WCA1zero0.8-{}".format(phi, Ca, ensemble_id)
@@ -93,6 +95,8 @@ def calcEnsembleAvergaedOrientationAngle(phi, Ca, ensemble_id):
 
     # calculate the ensemble average of the orietation angles (average over time and particles)
     return np.mean(orientation_angles, axis=(0, 1)) # [phi, theta]
+
+
 
 def run():
     # function to get ensemble aberaged orientation angle for each set of Ca and volume fraction
@@ -127,7 +131,9 @@ def run():
     f_main.write("Total time elapsed = {}\n".format(str(datetime.timedelta(seconds=time.time()-start_time))))
     f_main.close()
 
-def makePlot():
+
+
+def makePlot(save):
     phi_range = np.array([2.3994, 2.9993, 3.4492, 3.8991, 4.9488, 5.9986])
     Ca_range = [0.03, 0.08, 0.1, 0.14, 0.18]
 
@@ -142,23 +148,46 @@ def makePlot():
     ax.set_xlabel(r'$\phi$', fontsize = 12)
     ax.set_ylabel(r'$\dfrac{\langle \xi \rangle }{\pi }$', fontsize = 12)
     fig.tight_layout()
-    plt.savefig('Pictures/OrientationAngles/OrientationAngle_vs_phi.png', dpi = 200)
-    #plt.show()
+    if save:
+        plt.savefig('Pictures/OrientationAngles/OrientationAngle_vs_phi.png', dpi = 200)
+    else:
+        plt.show()
 
+
+
+scale = 10
 def check(filepath):
-    # read bond.vtk
+    with open(filepath, 'r') as f:
+        data = f.readlines()
 
-    # write as nodePositionfile
+    # write corresponding nodePositions file
+    numParticle = int(int(data[5].split()[1])/bead_number)
+    with open('Data/nodePositions_test.dat', 'w') as f:
+        f.writelines(data[6:6+numParticle*bead_number])
 
-    # calculate principal axes
-
-    # write principal axis vector vtk file
+    # calculate principal axes and write
+    principalAxes = calcOrientationAngle('Data/nodePositions_test.dat', numParticle, 1)
+    with open('Data/principalAxes_test.vtk', 'w') as f:
+        f.writelines(data[:5])
+        f.write('POINTS {} float\n'.format(4*numParticle))
+        for i in range(numParticle):
+            f.write(" ".join(str(x) for x in (principalAxes[0][i, :] + scale*principalAxes[1][i, 0, :])) + '\n')
+            f.write(" ".join(str(x) for x in (principalAxes[0][i, :] - scale*principalAxes[1][i, 0, :])) + '\n')
+            f.write(" ".join(str(x) for x in (principalAxes[0][i, :] + scale*principalAxes[1][i, 1, :])) + '\n')
+            f.write(" ".join(str(x) for x in (principalAxes[0][i, :] - scale*principalAxes[1][i, 1, :])) + '\n')
+        f.write('CELLS {} {}\n'.format(2*numParticle, 3*2*numParticle))
+        for i in range(numParticle):
+            f.write("2 {} {}\n".format(4*i, 4*i+1))
+            f.write("2 {} {}\n".format(4*i+2, 4*i+3))
+        f.write('CELL_TYPES {}\n'.format(2*numParticle))
+        for i in range(2*numParticle):
+            f.write("3\n")
 
     # remind the user to verify on paraview
-    pass
+    print('Finish!')
+    return
 
 
 ### main code
 # ===============================================================================
-#calcOrientationAngle('Data/nodePositions_twoCell.dat', 2)
-makePlot()
+check('Data/bond0_t1467600.vtk')
