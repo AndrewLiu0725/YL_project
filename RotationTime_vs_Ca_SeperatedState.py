@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 07/07/2021
+# Last Modified Date: 07/10/2021
 # ===============================================================================
 import numpy as np 
 import ctypes
@@ -25,11 +25,11 @@ path_preprocess = "/userdata4/ajliu/Data_Transfer/"
 path_CT = "/raid6/ctliao/Data/HI_ordering/"
 path_AJ = "/userdata4/ajliu/RBC_doublet/Data/"
 
-SAVE = 1
-READ = 0
+SAVE = 0
+READ = 1
 SHOW = 0
 print("Setting:\nSAVE:{}, READ:{}, SHOW:{}".format(SAVE, READ, SHOW))
-window_width = 200
+window_width = 100
 threshold = 0.9
 scale_factor = [1, 4000/3669]
 
@@ -230,18 +230,21 @@ if READ:
         data = pickle.load(handle) # data[system][phi] = [Cas, t_rot, t_rot_std]
 
 data_marker = 'o'
-criteria_1 = 2
+criteria_1 = 3
 
 ### Two Cell
 # ===============================================================================
 vol = 746.3163
 phi_range =[]
+true_phi_range = []
 for x in range(30, 41):
     phi = 2*vol/(24*x**2)
     phi_range.append(float(str(phi*100)[:3]))
+    true_phi_range.append(round(phi*100, 1))
 Ca_range = [i*0.01 for i in range(1, 21)]
 angle_range = [90 - 10*j for j in range(18)]
 phi_range.sort()
+true_phi_range.sort()
 
 fig1, ax1 = plt.subplots(figsize = (9, 6))
 fig2, ax2 = plt.subplots(figsize = (9, 6))
@@ -252,7 +255,7 @@ fig_list = [fig1, fig2, fig3]
 pic_name_suffix = ["", "_DoubletOnly", "_SingletsOnly"]
 
 for phi_index, phi in enumerate(phi_range):
-    if phi_index % 3 != 0: continue
+    if not phi in [4.0, 5.0, 6.0]: continue
 
     # collect data for this phi
     if READ:
@@ -270,8 +273,9 @@ for phi_index, phi in enumerate(phi_range):
             for angle_index, angle in enumerate(angle_range):
                 result = getRotationTime(phi, Ca, 1, 1, angle, 0)
                 for i in range(2):
-                    if not math.isnan(result[i]): tmp_t_rot[i].append(result[i])
-                    #tmp_t_rot[i] = tmp_t_rot[i] + result[i]
+                    if not math.isnan(result[i]):
+                        tmp_t_rot[i].append(result[i])
+
 
             for i in range(2):
                 if len(tmp_t_rot[i]) > criteria_1:
@@ -285,22 +289,32 @@ for phi_index, phi in enumerate(phi_range):
     # plot for this phi
     for ax_id, ax in enumerate(ax_list):
         if ax_id == 0:
-            color_ref = ax.scatter(Cas[1], t_rot[1], label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "doublet"), marker = data_marker)
-            ax.scatter(Cas[0], t_rot[0], facecolors = 'none', edgecolors = color_ref.get_facecolors()[0].tolist(), label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "singlets"), marker = data_marker)
-            '''
-            ax.errorbar(Cas[0], t_rot[0], 
-            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "singlets"), capsize = 2)
-            ax.errorbar(Cas[1], t_rot[1], linestyle = '--', color = ax.get_lines()[-1].get_c(), 
-            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "doublet"), capsize = 2)
-            '''
+            color_ref = ax.scatter(Cas[1], t_rot[1], 
+            label = '{} = {}%\n-{}'.format(r'$\phi$', true_phi_range[phi_index], "doublet"), marker = data_marker)
+
+            ax.scatter(Cas[0], t_rot[0], facecolors = 'none', edgecolors = color_ref.get_facecolors()[0].tolist(), 
+            label = '{} = {}%\n-{}'.format(r'$\phi$', true_phi_range[phi_index], "singlets"), marker = data_marker)
+
         elif ax_id == 1:
             ax.errorbar(Cas[1], t_rot[1], yerr = t_rot_std[1], 
-            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "doublet"), capsize = 2)
+            label = '{} = {}%\n-{}'.format(r'$\phi$', true_phi_range[phi_index], "doublet"), capsize = 2)
+
         else:
             ax.errorbar(Cas[0], t_rot[0], yerr = t_rot_std[0], 
-            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "singlets"), capsize = 2)
+            label = '{} = {}%\n-{}'.format(r'$\phi$', true_phi_range[phi_index], "singlets"), capsize = 2)
 
 for ax_id, ax in enumerate(ax_list):
+    if ax_id == 0:
+        for i in range(2):
+            y, x = [], []
+            for phi in [4.0, 5.0, 6.0]:
+                y += data["TwoCell"][phi][1][i]
+                x += data["TwoCell"][phi][0][i]
+            model = np.polyfit(x, y, 1)
+            predict = np.poly1d(model)
+            x_fit = np.linspace(min(x), max(x), 100)
+            y_fit = predict(x_fit)
+            ax.plot(x_fit, y_fit, linestyle = '--', linewidth = 3, label = 'doublet fitting line' if i else 'singlets fitting line', color = 'r' if i else 'b')
     ax.set_title("Rotation Time vs Ca (Two-Cell System)", fontsize = 20)
     ax.set_xlabel("Ca", fontsize = 12)
     ax.set_ylabel("Rotation Time ({})".format(r'$\dot \gamma t$'), fontsize = 12)
@@ -333,6 +347,8 @@ else:
     Ca_range = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2]
 
 for phi in phi_range:
+    if not phi in [3.8991, 4.9488, 5.9986]: continue
+
     # collect data for this phi
     if READ:
         t_rot = data["Suspension"][phi][1]
@@ -353,8 +369,8 @@ for phi in phi_range:
                 try:
                     result = getRotationTime(phi, Ca, 1, 1, ensemble_id, 1)
                     for i in range(2):
-                        if not math.isnan(result[i]): tmp_t_rot[i].append(result[i])
-                        #tmp_t_rot[i] = tmp_t_rot[i] + result[i]
+                        if not math.isnan(result[i]):
+                            tmp_t_rot[i].append(result[i])
                 except:
                     pass
 
@@ -370,23 +386,33 @@ for phi in phi_range:
     # plot for this phi
     for ax_id, ax in enumerate(ax_list):
         if ax_id == 0:
-            color_ref = ax.scatter(Cas[1], t_rot[1], label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "doublet"), marker = data_marker)
-            ax.scatter(Cas[0], t_rot[0], facecolors = 'none', edgecolors = color_ref.get_facecolors()[0].tolist(), label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "singlets"), marker = data_marker)
-            
-            '''
-            ax.errorbar(Cas[0], t_rot[0], 
-            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "singlets"), capsize = 2)
-            ax.errorbar(Cas[1], t_rot[1], linestyle = '--', color = ax.get_lines()[-1].get_c(), 
-            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "doublet"), capsize = 2)
-            '''
+            color_ref = ax.scatter(Cas[1], t_rot[1], 
+            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "doublet"), marker = data_marker)
+
+            ax.scatter(Cas[0], t_rot[0], facecolors = 'none', edgecolors = color_ref.get_facecolors()[0].tolist(), 
+            label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "singlets"), marker = data_marker)
+
         elif ax_id == 1:
             ax.errorbar(Cas[1], t_rot[1], yerr = t_rot_std[1], 
             label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "doublet"), capsize = 2)
+
         else:
             ax.errorbar(Cas[0], t_rot[0], yerr = t_rot_std[0], 
             label = '{} = {}%\n-{}'.format(r'$\phi$', round(phi,1), "singlets"), capsize = 2)
 
 for ax_id, ax in enumerate(ax_list):
+    if ax_id == 0:
+        for i in range(2):
+            y, x = [], []
+            for phi in [3.8991, 4.9488, 5.9986]:
+                y += data["Suspension"][phi][1][i]
+                x += data["Suspension"][phi][0][i]
+            model = np.polyfit(x, y, 1)
+            predict = np.poly1d(model)
+            x_fit = np.linspace(min(x), max(x), 100)
+            y_fit = predict(x_fit)
+            ax.plot(x_fit, y_fit, linestyle = '--', linewidth = 3, label = 'doublet fitting line' if i else 'singlets fitting line', color = 'r' if i else 'b')
+    
     ax.set_title("Rotation Time vs Ca (Suspension System)", fontsize = 20)
     ax.set_xlabel("Ca", fontsize = 12)
     ax.set_ylabel("Rotation Time ({})".format(r'$\dot \gamma t$'), fontsize = 12)
