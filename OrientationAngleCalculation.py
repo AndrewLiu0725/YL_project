@@ -27,8 +27,8 @@ data fitting to find best fit plane first and then project all nodes onto the pl
 '''
 
 bead_number = 642
-dimple_node = 314
-dimple_bonds = [321, 313, 49, 312, 223, 103]
+dimple_node = [314, 326]
+dimple_bonds = [[321, 313, 49, 312, 223, 103], [235, 322, 52, 325, 332, 115]]
 x_axis = np.array([1, 0, 0])
 z_axis_positive = np.array([0, 0, 1])
 z_axis_negative = np.array([0, 0, -1])
@@ -44,20 +44,23 @@ def calcOrientationAngle(path, numberParticle):
 
     # run over each partlce
     for i in range(numberParticle):
-        normalVectors = np.zeros((6, 3))
-        concaveNode = data[dimple_node + i*bead_number, :]
-        
-        for j in range(6):
-            n1 = data[dimple_bonds[j%6]+ i*bead_number, :]-concaveNode
-            n2 = data[dimple_bonds[(j+1)%6]+ i*bead_number, :]-concaveNode
-            tmpNormalVector = np.cross(n2, n1)
-            normalVectors[j, :] = tmpNormalVector/np.linalg.norm(tmpNormalVector)
-        
-        avgNormalVector = np.sum(normalVectors, axis=0)
-        normalizedAvgNormalVector = avgNormalVector/np.linalg.norm(avgNormalVector)
-        # Psi
-        orientationAngles[i, 0] = min(np.arccos(np.dot(normalizedAvgNormalVector, z_axis_positive)), 
-        np.arccos(np.dot(normalizedAvgNormalVector, z_axis_negative)))
+        for j in range(2):
+            normalVectors = np.zeros((6, 3))
+            concaveNode = data[dimple_node[j] + i*bead_number, :]
+            tmpPsi = np.zeros(2)
+
+            for k in range(6):
+                n1 = data[dimple_bonds[j][k%6]+ i*bead_number, :]-concaveNode
+                n2 = data[dimple_bonds[j][(k+1)%6]+ i*bead_number, :]-concaveNode
+                tmpNormalVector = np.cross(n2, n1)
+                normalVectors[k, :] = tmpNormalVector/np.linalg.norm(tmpNormalVector)
+            
+            avgNormalVector = np.sum(normalVectors, axis=0)
+            normalizedAvgNormalVector = avgNormalVector/np.linalg.norm(avgNormalVector)
+            # Psi
+            tmpPsi[j] = min(np.arccos(np.dot(normalizedAvgNormalVector, z_axis_positive)), 
+            np.arccos(np.dot(normalizedAvgNormalVector, z_axis_negative)))
+        orientationAngles[i, 0] = np.average(tmpPsi)
     return orientationAngles
 
 
