@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 08/20/2021
+# Last Modified Date: 08/22/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -44,10 +44,10 @@ def calcOrientationAngle(path, numberParticle):
 
     # run over each partlce
     for i in range(numberParticle):
+        tmpPsi = np.zeros(2)
         for j in range(2):
             normalVectors = np.zeros((6, 3))
             concaveNode = data[dimple_node[j] + i*bead_number, :]
-            tmpPsi = np.zeros(2)
 
             for k in range(6):
                 n1 = data[dimple_bonds[j][k%6]+ i*bead_number, :]-concaveNode
@@ -203,9 +203,9 @@ Ca_range_1 = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0
 Ca_range_2 = [0.03, 0.08, 0.1, 0.14, 0.18]
 makePlot(1, 'Data/total_orientation_angles_1.npy', Ca_range_1, 'st_40_et_100')
 '''
-#print(calcOrientationAngle('Data/nodePositions4000000.dat', 20))
+print(calcOrientationAngle('Data/nodePositions4000000.dat', 20))
 #checkSuspension('Data/bond0_t4000000.vtk', 'Data/nodePositions4000000.dat')
 #run()
-Ca_range_1 = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2]
-Ca_range_2 = [0.03, 0.08, 0.1, 0.14, 0.18]
-makePlot(0, 'Data/total_orientation_angles.npy', Ca_range_1, 'st_40_et_100')
+#Ca_range_1 = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2]
+#Ca_range_2 = [0.03, 0.08, 0.1, 0.14, 0.18]
+#makePlot(0, 'Data/total_orientation_angles.npy', Ca_range_1, 'st_40_et_100')
