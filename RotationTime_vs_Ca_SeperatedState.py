@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 07/10/2021
+# Last Modified Date: 08/23/2021
 # ===============================================================================
 import numpy as np 
 import ctypes
@@ -315,10 +315,10 @@ for ax_id, ax in enumerate(ax_list):
             x_fit = np.linspace(min(x), max(x), 100)
             y_fit = predict(x_fit)
             ax.plot(x_fit, y_fit, linestyle = '--', linewidth = 3, label = 'doublet fitting line' if i else 'singlets fitting line', color = 'r' if i else 'b')
-    ax.set_title("Rotation Time vs Ca (Two-Cell System)", fontsize = 20)
+    #ax.set_title("Rotation Time vs Ca (Two-Cell System)", fontsize = 20)
     ax.set_xlabel("Ca", fontsize = 12)
     ax.set_ylabel("Rotation Time ({})".format(r'$\dot \gamma t$'), fontsize = 12)
-    ax.legend(fontsize = 12, bbox_to_anchor=(1.05, 1), loc='upper left')
+    #ax.legend(fontsize = 12, bbox_to_anchor=(1.05, 1), loc='upper left')
     fig_list[ax_id].tight_layout()
     if not SHOW:
         fig_list[ax_id].savefig("Pictures/TwoCellSystem_RotationTime_vs_Ca{}.png".format(pic_name_suffix[ax_id]), dpi = 200)
@@ -413,10 +413,10 @@ for ax_id, ax in enumerate(ax_list):
             y_fit = predict(x_fit)
             ax.plot(x_fit, y_fit, linestyle = '--', linewidth = 3, label = 'doublet fitting line' if i else 'singlets fitting line', color = 'r' if i else 'b')
     
-    ax.set_title("Rotation Time vs Ca (Suspension System)", fontsize = 20)
+    #ax.set_title("Rotation Time vs Ca (Suspension System)", fontsize = 20)
     ax.set_xlabel("Ca", fontsize = 12)
     ax.set_ylabel("Rotation Time ({})".format(r'$\dot \gamma t$'), fontsize = 12)
-    ax.legend(fontsize = 12, bbox_to_anchor=(1.05, 1), loc='upper left')
+    #ax.legend(fontsize = 12, bbox_to_anchor=(1.05, 1), loc='upper left')
     fig_list[ax_id].tight_layout()
     if not SHOW:
         fig_list[ax_id].savefig("Pictures/SuspensionSystem_RotationTime_vs_Ca{}.png".format(pic_name_suffix[ax_id]), dpi = 200)

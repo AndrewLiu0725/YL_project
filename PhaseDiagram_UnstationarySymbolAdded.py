@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 04/02/2021
+# Last Modified Date: 08/23/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -81,7 +81,7 @@ def makePlot(variable_type, system, division_type, unstationary_symbol_style, al
     im = ax.pcolormesh(Y, X, Z(index_X, index_Y, df), cmap = cm.coolwarm)
     cb = fig.colorbar(im, ax = ax)
     cb.ax.tick_params(labelsize = 25)
-    ax.set_title("Phase Diagram of {} vs Ca ({} system)".format(r'$\phi$', system), fontsize = 30)
+    #ax.set_title("Phase Diagram of {} vs Ca ({} system)".format(r'$\phi$', system), fontsize = 30)
     ax.set_xlabel('Ca', fontsize = 30)
     ax.set_ylabel(r'$\phi$'+"(%)", fontsize = 30)
     ax.tick_params(labelsize = 25)
