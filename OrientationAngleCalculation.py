@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 08/22/2021
+# Last Modified Date: 09/05/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,19 +12,11 @@ import datetime
 This code is to calculate the ensemble averaged orientation angles of suspension system.
 
 The orientation angles are defined as follow:
-1. theta is the angle between the major axis of the deformed RBC (minimum principal axis) and the shear direction (x-axis)
+1. theta is the angle between the major axis of the deformed RBC and the shear direction (x-axis)
 2. Psi is the angle between the vortex axis (z-axis) and the normal vector of initial concanve point
 
 The ensemble average is taken over time steps, particles, and ensemble simulations
 """
-
-'''
-To do:
-the principal axes is ascending
-
-Candidate for best algo:
-data fitting to find best fit plane first and then project all nodes onto the plane and do PCA
-'''
 
 bead_number = 642
 dimple_node = [314, 326]
@@ -37,13 +29,41 @@ numOrientationAngles = 1
 
 # main function
 # ===============================================================================
-def calcOrientationAngle(path, numberParticle):
+def findMajorAxisNodes(path, numberParticle):
+    # get the data
+    data = np.loadtxt(path)
+    majorAxisIndices = np.zeros(numberParticle).astype(int)
+
+    # run over each partlce
+    for i in range(numberParticle):
+        com = np.average(data[i*bead_number:(i+1)*bead_number, :], axis=0)
+
+        # init
+        max_distance = np.linalg.norm(data[i*bead_number, :] - com)
+        farthest_node = i*bead_number
+
+        # run over each node and compare the to-center-distance
+        for j in range(1, bead_number):
+            node_index = i*bead_number + j
+            tmp_distance = np.linalg.norm(data[node_index, :] - com)
+            if tmp_distance > max_distance:
+                max_distance = tmp_distance
+                farthest_node = node_index
+
+        majorAxisIndices[i] = farthest_node
+
+    return majorAxisIndices
+
+
+
+def calcOrientationAngle(path, numberParticle, majorAxisIndices):
     # get the data
     data = np.loadtxt(path)
     orientationAngles = np.zeros((numberParticle, numOrientationAngles))
 
     # run over each partlce
     for i in range(numberParticle):
+        '''
         tmpPsi = np.zeros(2)
         for j in range(2):
             normalVectors = np.zeros((6, 3))
@@ -57,10 +77,22 @@ def calcOrientationAngle(path, numberParticle):
             
             avgNormalVector = np.sum(normalVectors, axis=0)
             normalizedAvgNormalVector = avgNormalVector/np.linalg.norm(avgNormalVector)
-            # Psi
             tmpPsi[j] = min(np.arccos(np.dot(normalizedAvgNormalVector, z_axis_positive)), 
             np.arccos(np.dot(normalizedAvgNormalVector, z_axis_negative)))
+        # Psi
         orientationAngles[i, 0] = np.average(tmpPsi)
+        '''
+
+        # theta
+        com = np.average(data[i*bead_number:(i+1)*bead_number, :], axis=0)
+        majorAxisVector = data[majorAxisIndices[i], :] - com
+        x, y = majorAxisVector[0], majorAxisVector[1]
+        if x > 0:
+            theta = np.arccos(x/np.sqrt(x**2+y**2)) * np.sign(y)
+        else:
+            theta = (np.pi - np.arccos(x/np.sqrt(x**2+y**2))) * np.sign(-y) 
+        orientationAngles[i, 0] = theta
+
     return orientationAngles
 
 
@@ -75,16 +107,19 @@ def calcEnsembleAvergaedOrientationAngle(phi, Ca, ensemble_id):
         pre_parameters = f.readlines()
     timesteps = int((pre_parameters[pre_parameters.index("timesteps\n")+1])[:-1]) # number of COM files
     particle_numbers = int((pre_parameters[pre_parameters.index("particle_numbers\n")+1])[:-1])
-
-    # get Psi time series for each particle
     folder_name = '/raid6/ctliao/Data/HI_ordering/h24_phi{}_Re0.1_Ca{}_WCA1_zero0.8-{}/data/'.format(phi, Ca, ensemble_id)
-    st, et = 40, 100
-    orientation_angles = np.zeros((particle_numbers, et-st, numOrientationAngles))
-    for t in range(et-st):
-        orientation_angles[:, t, :] = calcOrientationAngle(folder_name + 'nodePositions{}.dat'.format(4000*(t+st)), particle_numbers)
 
-    # calculate the ensemble average of the orietation angles (average over time and particles)
-    return np.mean(orientation_angles, axis=(0, 1)) # Psi
+    # find major axis' nodes' indices
+    majorAxisIndices = findMajorAxisNodes(folder_name + 'nodePositions{}.dat'.format(4000*(100)), particle_numbers)
+
+    # get orientation angles time series for each particle
+    st, et = int(0.75*timesteps), timesteps
+    orientation_angles = np.zeros((particle_numbers, numOrientationAngles))
+    for t in range(st, et):
+        orientation_angles += calcOrientationAngle(folder_name + 'nodePositions{}.dat'.format(4000*t), particle_numbers, majorAxisIndices)
+
+    # calculate the ensemble average of the orietation angles (average over particles and time)
+    return np.mean(orientation_angles, axis=0)/(et-st) # [Psi, theta]
 
 
 
@@ -100,7 +135,7 @@ def run():
 
     _, parameter_set = getSuspensionParameterSets()
 
-    total_orientation_angles = np.zeros((len(Ca_range), len(phi_range), 1))
+    total_orientation_angles = np.zeros((len(Ca_range), len(phi_range), numOrientationAngles))
     for Ca_index, Ca in enumerate(Ca_range):
         for phi_index, phi in enumerate(phi_range):
             ensemble_count = 0
@@ -124,7 +159,8 @@ def run():
 
 def makePlot(save, filepath, Ca_range, suffix):
     phi_range = np.array([2.3994, 2.9993, 3.4492, 3.8991, 4.9488, 5.9986])
-    Ca_range_selected = [0.03, 0.06, 0.08, 0.1, 0.14, 0.18]
+    #Ca_range_selected = [0.03, 0.06, 0.08, 0.1, 0.18]
+    Ca_range_selected = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2]
 
     data = np.load(filepath)
 
@@ -203,9 +239,9 @@ Ca_range_1 = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0
 Ca_range_2 = [0.03, 0.08, 0.1, 0.14, 0.18]
 makePlot(1, 'Data/total_orientation_angles_1.npy', Ca_range_1, 'st_40_et_100')
 '''
-print(calcOrientationAngle('Data/nodePositions4000000.dat', 20))
+#print(calcOrientationAngle('Data/nodePositions4000000.dat', 20))
 #checkSuspension('Data/bond0_t4000000.vtk', 'Data/nodePositions4000000.dat')
 #run()
-#Ca_range_1 = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2]
-#Ca_range_2 = [0.03, 0.08, 0.1, 0.14, 0.18]
-#makePlot(0, 'Data/total_orientation_angles.npy', Ca_range_1, 'st_40_et_100')
+Ca_range_1 = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2]
+Ca_range_2 = [0.03, 0.08, 0.1, 0.14, 0.18]
+makePlot(0, 'Data/total_orientation_angles_theta.npy', Ca_range_1, 'LastQuarter')
