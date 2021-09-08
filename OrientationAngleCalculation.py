@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 09/05/2021
+# Last Modified Date: 09/08/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,7 +25,7 @@ x_axis = np.array([1, 0, 0])
 z_axis_positive = np.array([0, 0, 1])
 z_axis_negative = np.array([0, 0, -1])
 dim = [144, 24, 144]
-numOrientationAngles = 1
+numOrientationAngles = 2
 
 # main function
 # ===============================================================================
@@ -63,7 +63,6 @@ def calcOrientationAngle(path, numberParticle, majorAxisIndices):
 
     # run over each partlce
     for i in range(numberParticle):
-        '''
         tmpPsi = np.zeros(2)
         for j in range(2):
             normalVectors = np.zeros((6, 3))
@@ -81,7 +80,6 @@ def calcOrientationAngle(path, numberParticle, majorAxisIndices):
             np.arccos(np.dot(normalizedAvgNormalVector, z_axis_negative)))
         # Psi
         orientationAngles[i, 0] = np.average(tmpPsi)
-        '''
 
         # theta
         com = np.average(data[i*bead_number:(i+1)*bead_number, :], axis=0)
@@ -91,9 +89,9 @@ def calcOrientationAngle(path, numberParticle, majorAxisIndices):
             theta = np.arccos(x/np.sqrt(x**2+y**2)) * np.sign(y)
         else:
             theta = (np.pi - np.arccos(x/np.sqrt(x**2+y**2))) * np.sign(-y) 
-        orientationAngles[i, 0] = theta
+        orientationAngles[i, 1] = theta
 
-    return orientationAngles
+    return orientationAngles # [Psi, theta]
 
 
 
@@ -109,7 +107,7 @@ def calcEnsembleAvergaedOrientationAngle(phi, Ca, ensemble_id):
     particle_numbers = int((pre_parameters[pre_parameters.index("particle_numbers\n")+1])[:-1])
     folder_name = '/raid6/ctliao/Data/HI_ordering/h24_phi{}_Re0.1_Ca{}_WCA1_zero0.8-{}/data/'.format(phi, Ca, ensemble_id)
 
-    # find major axis' nodes' indices
+    # find major axis' nodes' indices (use the deformed particle at strain 100)
     majorAxisIndices = findMajorAxisNodes(folder_name + 'nodePositions{}.dat'.format(4000*(100)), particle_numbers)
 
     # get orientation angles time series for each particle
@@ -131,7 +129,6 @@ def run():
 
     phi_range = [2.3994, 2.9993, 3.4492, 3.8991, 4.9488, 5.9986]
     Ca_range = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2]
-    #Ca_range = [0.03, 0.08, 0.1, 0.14, 0.18]
 
     _, parameter_set = getSuspensionParameterSets()
 
@@ -157,19 +154,16 @@ def run():
 
 
 
-def makePlot(save, filepath, Ca_range, suffix):
+def makePlot(save, filepath, Ca_range_data, Ca_range_plot, suffix):
     phi_range = np.array([2.3994, 2.9993, 3.4492, 3.8991, 4.9488, 5.9986])
-    #Ca_range_selected = [0.03, 0.06, 0.08, 0.1, 0.18]
-    Ca_range_selected = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2]
-
     data = np.load(filepath)
 
     fig, ax = plt.subplots(figsize = (9, 6))
 
-    for Ca_index, Ca in enumerate(Ca_range):
-        if Ca not in Ca_range_selected: continue
+    for Ca_index, Ca in enumerate(Ca_range_data):
+        if Ca not in Ca_range_plot: continue
         p = ax.plot(phi_range*0.01, data[Ca_index, :, 0]/np.pi, linestyle = '--', marker = "^", label = 'Ca={}, {}={}'.format(Ca, r'$\xi$', r'$\Psi$'))
-        #ax.plot(phi_range*0.01, data[Ca_index, :, 1]/np.pi, linestyle = '--',marker = "v", color = p[0].get_color(), label = 'Ca = {}, {}={}'.format(Ca, r'$\xi$', r'$\theta$'))
+        ax.plot(phi_range*0.01, data[Ca_index, :, 1]/np.pi, linestyle = '--',marker = "v", color = p[0].get_color(), label = 'Ca = {}, {}={}'.format(Ca, r'$\xi$', r'$\theta$'))
     ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     ax.set_xlabel(r'$\phi$', fontsize = 12)
     ax.set_ylabel(r'$\dfrac{\langle \xi \rangle }{\pi }$', fontsize = 12)
@@ -178,11 +172,11 @@ def makePlot(save, filepath, Ca_range, suffix):
         plt.savefig('Pictures/OrientationAngles/OrientationAngle_vs_phi_{}.png'.format(suffix), dpi = 200)
     else:
         plt.show()
-    '''
+    
     fig, axs = plt.subplots(1, 2, figsize = (15, 6))
 
-    for Ca_index, Ca in enumerate(Ca_range):
-        if Ca not in Ca_range_selected: continue
+    for Ca_index, Ca in enumerate(Ca_range_data):
+        if Ca not in Ca_range_plot: continue
         axs[0].plot(phi_range*0.01, data[Ca_index, :, 0]/np.pi, linestyle = '--', marker = "^", label = 'Ca={}'.format(Ca))
         axs[1].plot(phi_range*0.01, data[Ca_index, :, 1]/np.pi, linestyle = '--',marker = "v", label = 'Ca={}'.format(Ca))
     for i in range(2):
@@ -195,7 +189,7 @@ def makePlot(save, filepath, Ca_range, suffix):
         plt.savefig('Pictures/OrientationAngles/OrientationAngle_vs_phi_seperated_{}.png'.format(suffix), dpi = 200)
     else:
         plt.show()
-    '''
+    
 
 
 
@@ -244,4 +238,4 @@ makePlot(1, 'Data/total_orientation_angles_1.npy', Ca_range_1, 'st_40_et_100')
 #run()
 Ca_range_1 = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2]
 Ca_range_2 = [0.03, 0.08, 0.1, 0.14, 0.18]
-makePlot(0, 'Data/total_orientation_angles_theta.npy', Ca_range_1, 'LastQuarter')
+makePlot(1, 'Data/total_orientation_angles_twoOA.npy', Ca_range_1, Ca_range_2, 'LastQuarter')
