@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 08/23/2021
+# Last Modified Date: 10/17/2021
 # ===============================================================================
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -41,9 +41,9 @@ for i in range(2): # run over iv and rv
         #plt.title("{} vs Ca (two-cell system)".format(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$'), fontsize = 30)
         plt.xlabel("Ca", fontsize = 25)
         plt.xticks(fontsize = 20)
-        plt.ylabel(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', fontsize = 25)
+        plt.ylabel(r'$\left[ \eta \right]$' if i == 0 else r'$\eta _{rel}$', fontsize = 25)
         plt.yticks(fontsize = 20)
-        plt.legend(fontsize = 20)
+        plt.legend(fontsize = 20, frameon = False)
         if MAKE_PLOT:
             plt.savefig("./Pictures/Viscosity_vs_phi_Ca/TwoCellSystem_{}_vs_Ca_{}ErrorBar.png".format("IntrinsicViscosity" if i == 0 else "RelativeViscosity", "with" if j == 0 else "without"), dpi = 300)
             plt.close()
@@ -66,9 +66,9 @@ for i in range(2): # run over iv and rv
         #plt.title("{} vs {} (two-cell system)".format(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', r'$\phi$'), fontsize = 30)
         plt.xlabel("{} (%)".format(r'$\phi$'), fontsize = 25)
         plt.xticks(fontsize = 20)
-        plt.ylabel(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', fontsize = 25)
+        plt.ylabel(r'$\left[ \eta \right]$' if i == 0 else r'$\eta _{rel}$', fontsize = 25)
         plt.yticks(fontsize = 20)
-        plt.legend(fontsize = 20)
+        plt.legend(fontsize = 20, frameon = False)
         if MAKE_PLOT:
             plt.savefig("./Pictures/Viscosity_vs_phi_Ca/TwoCellSystem_{}_vs_phi_{}ErrorBar.png".format("IntrinsicViscosity" if i == 0 else "RelativeViscosity", "with" if j == 0 else "without"), dpi = 300)
             plt.close()

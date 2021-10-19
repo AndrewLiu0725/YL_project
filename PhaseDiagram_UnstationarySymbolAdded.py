@@ -1,13 +1,12 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 08/23/2021
+# Last Modified Date: 10/17/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 from matplotlib import cm
 import pickle
-from RelaxtionTime import calcRelaxationTime
 
 """
 This code is to add unstationary symbol on the phase diagram
@@ -83,7 +82,7 @@ def makePlot(variable_type, system, division_type, unstationary_symbol_style, al
     cb.ax.tick_params(labelsize = 25)
     #ax.set_title("Phase Diagram of {} vs Ca ({} system)".format(r'$\phi$', system), fontsize = 30)
     ax.set_xlabel('Ca', fontsize = 30)
-    ax.set_ylabel(r'$\phi$'+"(%)", fontsize = 30)
+    ax.set_ylabel(r'$\phi$'+"(%)", fontsize = 35)
     ax.tick_params(labelsize = 25)
 
     # add unstationary symbol
@@ -99,7 +98,7 @@ def makePlot(variable_type, system, division_type, unstationary_symbol_style, al
 
     void_marker = mlines.Line2D([], [], color = "k", marker = "x", linestyle = 'None', markersize = 20, label="unstationary")
 
-    ax.legend(handles = [void_marker], bbox_to_anchor=(1.05, 1.05), loc='upper left', prop={'size': 20})
+    ax.legend(handles = [void_marker], bbox_to_anchor=(0.9, 1.07), loc='upper left', prop={'size': 25}, frameon = False)
 
     fig.tight_layout()
     plt.savefig('./Pictures/PhaseDiagram_UnstationarySymbolAdded/{}System_PhaseDiagram_UnstationarySymbolAdded_{}_{}_alpha_{}_SymbolStyle_{}.png'.format(
