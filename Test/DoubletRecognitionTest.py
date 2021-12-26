@@ -206,7 +206,7 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
 #calcDoubletFraction(3.4492, 0.01, 1, 1, 2, 5, 1)
 
 # two-cell system
-calcDoubletFraction(6.0, 0.06, 1, 1, -80, 0, 1700, 1900)
-#calcDoubletFraction(3.8, 0.02, 1, 1, 40, 0, 0, 500)
+#calcDoubletFraction(6.0, 0.06, 1, 1, -80, 0, 1700, 1900)
+#calcDoubletFraction(3.8, 0.02, 1, 1, 40, 0, 0, 400)
 #calcDoubletFraction(4.7, 0.05, 1, 1, 0, 0, 0, 400)
-#calcDoubletFraction(4.7, 0.15, 1, 1, 30, 0, 0, 500)
+calcDoubletFraction(4.7, 0.15, 1, 1, 30, 0, 0, 500)

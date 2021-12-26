@@ -5,6 +5,7 @@
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #define max(x, y) (((x) > (y)) ? (x) : (y))
+#define DEBUG 0
 
 // use "gcc -fPIC -shared -o RBC_Utilities_CExtension.so RBC_Utilities_CExtension.c" to compile and create .so file
 
@@ -53,19 +54,29 @@ int extremum(const double *array, int t, const int k, const int timesteps){
 
 void calcDF(int *doublet_or_not, const double *distance, const double *uncorrected_distance, const double *COMs, const double *COMs_NB,
 const int *indice_pairs, const int* dim, int period, int timesteps, int number_of_pairs, double Dm, double criteria_Dm, int *end_time){
-    int k, i, j;
+    int k, i, j; // indices related to particles
     int t, inner_t, prev_min_distance_t;
-    double mean_d, sum_d;
-    double prev_min_distance, cur_min_distance, max_distance;
-    double dz, sum_dz, mean_dz; 
-    double max_dz = criteria_Dm*Dm/3; // for excluding close uncoupled partlces
-    double max_min_distance = criteria_Dm*Dm*3/4; 
-    double max_max_distance = criteria_Dm*Dm*4/3; // allow relative motion
     int current_end_time = timesteps;
-    double caution_distance = criteria_Dm*Dm; double max_caution_percentage = 0.1;
+    double mean_d, sum_d; // inter-particle distance
+
+    double prev_min_distance, cur_min_distance, max_distance;
+    double max_max_distance = Dm*4/3; // allow relative motion
+    double max_min_distance = Dm*3/4; // whereas need to be close enough
+    
+    // exclude close uncoupled partlces (mainly happens in the two-cell system)
+    double dz, sum_dz, mean_dz; 
+    double max_dz = Dm/3; 
+
+    // exclude those transition states (two particles nearly touch each other but do not form or break)
     int caution; double caution_percentage;
-    double max_min_distance_difference = criteria_Dm*Dm*0.5;
-    double prev_relative_x_NB, current_relative_x_NB;
+    double caution_distance = Dm; double max_caution_percentage = 0.1;
+
+    //double max_min_distance_difference = Dm*0.5;
+
+    // exclude the condition that two particles keep moving along the streamline inside a small box
+    // for the two-cell system, when the volume fraction is high, this case may satisfy all conditions above
+    double prev_relative_x_NB, current_relative_x_NB, relative_x_motion;
+    double max_relative_x_motion = Dm;
 
     // run over each pair of particles
     for (k = 0; k < number_of_pairs; k++){
@@ -77,9 +88,8 @@ const int *indice_pairs, const int* dim, int period, int timesteps, int number_o
         for (t = 3; t < (timesteps - 3); t ++){
             // min distance
             if (extremum(distance, t, k, timesteps) == 2){
-                caution = 0;
-                // calc the mean inter-particle distance (d)
-                sum_d = 0;
+                // calc the mean inter-particle distance (d) and caution percentage
+                sum_d = 0; caution = 0;
                 for (inner_t = prev_min_distance_t; inner_t <= t; inner_t++){
                     sum_d += distance[k*timesteps + inner_t];
                     if (distance[k*timesteps + inner_t] > caution_distance){
@@ -102,25 +112,26 @@ const int *indice_pairs, const int* dim, int period, int timesteps, int number_o
                 }
                 mean_dz = sum_dz/(t-prev_min_distance_t+1);
 
-                /*
-                if ((t > 400) && (t < 500)){
-                    prev_relative_x_NB = fabs(COMs_NB[i*timesteps*3 + prev_min_distance_t*3] - COMs_NB[j*timesteps*3 + prev_min_distance_t*3]);
-                    current_relative_x_NB = fabs(COMs_NB[i*timesteps*3 + t*3] - COMs_NB[j*timesteps*3 + t*3]);
-                    printf("[%d,%d]: |%lf-%lf|=%lf\n", prev_min_distance_t, t, prev_relative_x_NB, current_relative_x_NB, fabs(prev_relative_x_NB-current_relative_x_NB));
+                
+                prev_relative_x_NB = fabs(COMs_NB[i*timesteps*3 + prev_min_distance_t*3] - COMs_NB[j*timesteps*3 + prev_min_distance_t*3]);
+                current_relative_x_NB = fabs(COMs_NB[i*timesteps*3 + t*3] - COMs_NB[j*timesteps*3 + t*3]);
+                relative_x_motion = fabs(prev_relative_x_NB-current_relative_x_NB);
+                // printf("[%d,%d]: |%lf-%lf|=%lf\n", prev_min_distance_t, t, prev_relative_x_NB, current_relative_x_NB, fabs(prev_relative_x_NB-current_relative_x_NB));
+                
+                if (DEBUG){
+                    if ((t > 350) && (t < 450)){
+                        printf("[%d,%d]:\n", prev_min_distance_t, t);
+                        printf("caution_percentage = %lf\n", caution_percentage);
+                        printf("relative_x = %lf\n", relative_x_motion);
+                    }
                 }
-                */
 
                 // determine if this time window is in doublet state
-                if ((mean_d < criteria_Dm*Dm) && (mean_dz < max_dz) && 
+                if ((mean_d < criteria_Dm*Dm) && (mean_dz < max_dz) && (relative_x_motion < max_relative_x_motion) &&
                 (caution_percentage < max_caution_percentage) &&
                 (max_distance < max_max_distance) && (max(prev_min_distance, cur_min_distance) < max_min_distance)){
-                    // exclude the condition that two particles keep moving along the streamline inside a small box
-                    // for the two-cell system, when the volume fraction is high, this case may satisfy all conditions above
-
-                    if (fabs(uncorrected_distance[k*timesteps + prev_min_distance_t] - uncorrected_distance[k*timesteps + t]) < max_min_distance_difference){
-                        for (inner_t = prev_min_distance_t; inner_t <= t; inner_t++){
-                            doublet_or_not[k*(timesteps - period) + inner_t] = 1;
-                        }
+                    for (inner_t = prev_min_distance_t; inner_t <= t; inner_t++){
+                        doublet_or_not[k*(timesteps - period) + inner_t] = 1;
                     }
                 }
                 prev_min_distance_t = t; // update the prev_min_distance_t 
