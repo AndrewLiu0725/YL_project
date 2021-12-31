@@ -1,39 +1,45 @@
+/*
+Copyright 2021 An-Jun Liu
+Last Modified Date: 12/31/2021
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-// use "gcc -fPIC -shared -o RBC_Utilities_CExtension.so RBC_Utilities_CExtension.c" to compile and create .so file
-// use "gcc -shared -o RBC_Utilities_CExtension.so -fPIC -fopenmp RBC_Utilities_CExtension.c" to compile and create .so file
+#define min(x, y) (((x) < (y)) ? (x) : (y))
+#define max(x, y) (((x) > (y)) ? (x) : (y))
+#define DEBUG 0
 
-void correctDiffpos(double *diffpos, const double *COMs, int number_of_pairs, int timesteps, double Dm, const int *indice_pairs, const int* dim){
+// use "gcc -fPIC -shared -o RBC_Utilities_CExtension.so RBC_Utilities_CExtension.c" to compile and create .so file
+
+void correctDiffpos(double *distance, const double *COMs, int number_of_pairs, int timesteps, double Dm, const int *indice_pairs, const int* dim){
     int k, t;
     int i, j;
-    double correct_diffpos_square;
     double dx, dy, dz;
-    // #pragma omp parallel shared(diffpos,COMs,number_of_pairs,timesteps,Dm,indice_pairs,dim) private(i,j,k,t,correct_diffpos_square,dx,dy,dz) 
-    // #pragma omp for  schedule(static)
-    for (k = 0; k < number_of_pairs; k ++){
+
+    for (k = 0; k < number_of_pairs; k++){
         i = indice_pairs[2*k];
         j = indice_pairs[2*k + 1];
-        for (t = 0; t < timesteps; t ++){ 
+
+        for (t = 0; t < timesteps; t++){ 
             dx = fabs(COMs[i*timesteps*3 + t*3] - (COMs[j*timesteps*3 + t*3]));
             dy = fabs(COMs[i*timesteps*3 + t*3 + 1] - (COMs[j*timesteps*3 + t*3 + 1]));
             dz = fabs(COMs[i*timesteps*3 + t*3 + 2] - (COMs[j*timesteps*3 + t*3 + 2]));
 
-            // Deal with periodic boundary condition
+            // Deal with periodic boundary condition (no PBC in y direction)
             if (dx > dim[0]/2) dx = dim[0] - dx;
             if (dz > dim[2]/2) dz = dim[2] - dz;
             
-            correct_diffpos_square = dx*dx + dy*dy + dz*dz;
-            diffpos[k*timesteps + (t)] = sqrt(correct_diffpos_square); 
+            distance[k*timesteps + t] = sqrt(dx*dx + dy*dy + dz*dz); 
         }
     }
 }
 
-int extreme(const double *array, int t, const int k, const int timesteps){
+// this extremum recognition function may be improved
+int extremum(const double *array, int t, const int k, const int timesteps){
     /*
-    * Function:  extreme 
+    * Function:  extremum
     * --------------------
     *  Distinguish whether current point is min, max, or neither.
     * 
@@ -51,112 +57,97 @@ int extreme(const double *array, int t, const int k, const int timesteps){
     else return 0;
 }
 
-void calcDF(int *doublet_or_not, const double *diffpos, int period, int timesteps, int number_of_pairs, double Dm, double criteria_Dm,
-const double *COMs, const int *indice_pairs, int *state_series, int *end_time, const int* dim){
-    int k, t, inner_t, i, j, inner_st;
-    double mean, sum_x;
-    double dl, sum_l;
-    double prev_min, cur_min, max, range; // for excluding close uncoupled partlces
-    double dz, sum_dz, mean_dz; double mean_dz_threshold = 5; // for excluding close uncoupled partlces
-    double min_distance_1 = 11.5; double min_distance_2 = 7.5; // criteria for min in each period
-    double min_range = 3;
-    int prev_min_t, pprev_min_t;
-    // The value of the following two criteria may need further consideration
-    double velocity_sliding_threshold = 0.5*Dm/period;
-    double velocity_kayaking_threshold = 1.6/period;
-    int state, prev_state;
+void calcDF(int *doublet_or_not, const double *distance, const double *uncorrected_distance, const double *COMs, const double *COMs_NB,
+const int *indice_pairs, const int* dim, int timesteps, int number_of_pairs, double Dm, double criteria_Dm, int *end_time){
+    int k, i, j; // indices related to particles
+    int t, inner_t, prev_min_distance_t;
+    int current_end_time = timesteps;
+    double mean_d, sum_d; // inter-particle distance
 
-    // #pragma omp parallel shared(diffpos,doublet_or_not,number_of_pairs,timesteps,Dm,criteria_Dm,period) private(i,t,mean) 
-    // #pragma omp for  schedule(static)
+    double prev_min_distance, cur_min_distance, max_distance;
+    double max_max_distance = Dm*4/3; // allow relative motion
+    double max_min_distance = Dm*3/4; // whereas need to be close enough
+    
+    // exclude close uncoupled partlces (mainly happens in the two-cell system)
+    double dz, sum_dz, mean_dz; 
+    double max_dz = Dm*0.6; 
+
+    // exclude those transition states (two particles nearly touch each other)
+    // happens when the two particles almost form a doublet or a doublet almost breaks
+    int caution; double caution_percentage;
+    double caution_distance = Dm; double max_caution_percentage = 0.1;
+
+    // exclude the condition that two particles keep moving along the streamline inside a small box
+    // for the two-cell system, when the volume fraction is high, this case may satisfy all conditions above
+    double prev_relative_x_NB, current_relative_x_NB, relative_x_motion;
+    double max_relative_x_motion = Dm;
+
+    // run over each pair of particles
     for (k = 0; k < number_of_pairs; k++){
-        i = indice_pairs[2*k]; j = indice_pairs[2*k+1]; // particle id
 
-        // Initilaization
-        pprev_min_t = prev_min_t = 0;
-        prev_state = state = 4;
+        i = indice_pairs[2*k]; j = indice_pairs[2*k+1]; // two particles' indices
+        prev_min_distance_t = 0;
+
         // run over t
-        for (t = 3; t < (timesteps - period); t ++){
-            // min 
-            if (extreme(diffpos, t, k, timesteps) == 2){
-                state = 4;
-                // is sliding state
-                if (((fabs(COMs[i*timesteps*3 + t*3] - COMs[i*timesteps*3 + pprev_min_t*3])/(t-prev_min_t)) > velocity_sliding_threshold)
-                && ((fabs(COMs[j*timesteps*3 + t*3] - COMs[j*timesteps*3 + pprev_min_t*3])/(t-prev_min_t)) > velocity_sliding_threshold)){
-                    state = 3;
-                }
-                // is not sliding state
-                else{
-                    // calc the mean
-                    sum_x = 0;
-                    for (inner_t = prev_min_t; inner_t <= t; inner_t++){
-                        sum_x += diffpos[k*timesteps + inner_t];
-                    }
-                    mean = sum_x/(t-prev_min_t+1);
-
-                    // calc range
-                    prev_min = diffpos[k*timesteps + prev_min_t];
-                    cur_min = diffpos[k*timesteps + t];
-                    range = ((max - cur_min) + (max - prev_min))/2;
-
-                    // calc path of length
-                    sum_l = 0;
-                    for (inner_t = prev_min_t; inner_t <= t; inner_t++){
-                        dl = fabs(COMs[i*timesteps*3 + inner_t*3]-COMs[i*timesteps*3 + (inner_t-1)*3]);
-                        if (dl > dim[0]) dl = (dim[0]-dl); // cross the boundary
-                        sum_l += dl;
-                    }
-
-                    // calc dz
-                    sum_dz = 0;
-                    for (inner_t = prev_min_t; inner_t <= t; inner_t++){
-                        dz = fabs(COMs[i*timesteps*3 + inner_t*3 + 2]-COMs[j*timesteps*3 + inner_t*3 + 2]);
-                        if (dz > dim[2]) dz = (dim[2]-dz); // cross the boundary
-                        sum_dz += dz;
-                    }
-                    mean_dz = sum_dz/(t-prev_min_t+1);
-
-                    // recognize if is doublet state
-                    if ((mean < criteria_Dm*Dm) && (max < (Dm+1)) && (mean_dz < mean_dz_threshold)){
-                        if ((prev_min < min_distance_2) && (cur_min < min_distance_2)){
-                            state = 1;
-                        }
-                        else{
-                            // have relative motion (may use speed to exclude long cycle in kayaking state)
-                            if ((prev_min < min_distance_1) && (cur_min < min_distance_1) && (range > min_range)){
-                                state = 1;
-                            }
-                            else{
-                                if ((sum_l/(t-prev_min_t+1)) < velocity_kayaking_threshold) state = 2;
-                            }
-                        }
-                    }
-                    // recognize if is two-kayaking-singlet state
-                    else{
-                        if ((sum_l/(t-prev_min_t+1)) < velocity_kayaking_threshold) state = 2;
+        for (t = 3; t < (timesteps - 3); t ++){
+            // min distance
+            if (extremum(distance, t, k, timesteps) == 2){
+                // calc the mean inter-particle distance (d) and caution percentage
+                sum_d = 0; caution = 0;
+                for (inner_t = prev_min_distance_t; inner_t <= t; inner_t++){
+                    sum_d += distance[k*timesteps + inner_t];
+                    if (distance[k*timesteps + inner_t] > caution_distance){
+                        caution += 1;
                     }
                 }
-                //state series
-                if (prev_state == 3) inner_st = pprev_min_t;
-                else inner_st = prev_min_t;
-                for (inner_t = inner_st; inner_t <= t; inner_t++){
-                    state_series[inner_t] = state;
+                mean_d = sum_d/(t-prev_min_distance_t+1);
+                caution_percentage = (double)caution/(t-prev_min_distance_t+1);
+
+                // record the min distances for this time window
+                prev_min_distance = distance[k*timesteps + prev_min_distance_t];
+                cur_min_distance = distance[k*timesteps + t];
+
+                // calc the mean inter-particle distance in z-axis (dz)
+                sum_dz = 0;
+                for (inner_t = prev_min_distance_t; inner_t <= t; inner_t++){
+                    dz = fabs(COMs[i*timesteps*3 + inner_t*3 + 2]-COMs[j*timesteps*3 + inner_t*3 + 2]);
+                    if (dz > dim[2]/2) dz = (dim[2]-dz); // cross the boundary
+                    sum_dz += dz;
                 }
-                // doublet fraction
-                if (state == 1){
-                    for (inner_t = inner_st; inner_t <= t; inner_t++){
-                        doublet_or_not[k*(timesteps - period) + inner_t] = 1;
+                mean_dz = sum_dz/(t-prev_min_distance_t+1);
+
+                // calculate the relative motion in x direction
+                prev_relative_x_NB = fabs(COMs_NB[i*timesteps*3 + prev_min_distance_t*3] - COMs_NB[j*timesteps*3 + prev_min_distance_t*3]);
+                current_relative_x_NB = fabs(COMs_NB[i*timesteps*3 + t*3] - COMs_NB[j*timesteps*3 + t*3]);
+                relative_x_motion = fabs(prev_relative_x_NB-current_relative_x_NB);
+                
+                if (DEBUG){
+                    if ((i == 10) && (j==15) && (t > 1870) && (t < 1910)){
+                        printf("[%d,%d]:\n", prev_min_distance_t, t);
+                        printf("max_distance = %lf\nmin_distance = %lf\n", max_distance, max(prev_min_distance, cur_min_distance));
+                        printf("mean dz = %lf\n", mean_dz);
+                        printf("caution_percentage = %lf\n", caution_percentage);
+                        printf("relative_x = %lf\n", relative_x_motion);
                     }
                 }
-                pprev_min_t = prev_min_t;
-                prev_min_t = t;
-                prev_state = state;
+
+                // determine if this time window is in doublet state
+                if ((mean_d < criteria_Dm*Dm) && (mean_dz < max_dz) && 
+                (relative_x_motion < max_relative_x_motion) && (caution_percentage < max_caution_percentage) &&
+                (max_distance < max_max_distance) && (max(prev_min_distance, cur_min_distance) < max_min_distance)){
+                    for (inner_t = prev_min_distance_t; inner_t <= t; inner_t++){
+                        doublet_or_not[k*timesteps + inner_t] = 1;
+                    }
+                }
+                prev_min_distance_t = t; // update the prev_min_distance_t 
             }
 
-            // max
-            else if (extreme(diffpos, t, k, timesteps) == 1){
-                max = diffpos[k*timesteps + t];
+            // max distance (peak)
+            else if (extremum(distance, t, k, timesteps) == 1){
+                max_distance = distance[k*timesteps + t];
             }
         }
-        end_time[0] = prev_min_t;
+        current_end_time = min(current_end_time, prev_min_distance_t);
     }
+    end_time[0] = current_end_time;
 }

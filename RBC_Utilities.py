@@ -1,11 +1,10 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 06/14/2021
+# Last Modified Date: 12/31/2021
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
-import time
 from scipy import stats
 import ctypes
 import os
@@ -18,6 +17,8 @@ and relative viscosity for two-cell and suspension system.
 The Multi-Line Docstring for each function is also provided. 
 Please refer to these docstrings before using these utility functions.
 """
+
+DEBUG = 0
 
 # on server set flag = 1, on local set flag = 0
 # sevrer: /userdata4/ajliu/ <=>  local: /Users/andrewliu/remote_disk/
@@ -34,27 +35,26 @@ else:
     path_AJ = "/Users/andrewliu/remote_disk/RBC_doublet/Data/"
 
 
-def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dms, make_plot, depend, system):
+def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm, make_plot, dependent, system, st=None, et=None, outputDataType=0):
     """
     Input:
-    
-    input_criteria_Dms must be either lists or floats
-    
-    make_plot = 0 means doesn't need to make plot, 1 means saving df vs t plot without playing it, 2 means displaying the plot
-
-    system = 0 means two-cell system, 1 means suspension
-
-    depend means angle when system = 0, esemble id when system = 1
+        make_plot = 0 means doesn't need to make plot, 1 means saving df vs t plot without playing it, 2 means displaying the plot.
+        
+        system = 0 means two-cell system, 1 means suspension.
+        
+        dependent means angle when system = 0, esemble id when system = 1.
+        
+        st and et stand for the starting and ending time of the plot.
     
     Output:
-    
-    [[doublet fraction], timesteps, [state series], diffpos, particle_numbers]
-    
-    In state series, 1 means doublet, 2 means kayaking, 3 means sliding, and 4 means transition states
+        outputDataType = 0:
+            return [[DF], end_time[0], rotation_time]
+        outputDataType = 1:
+            return [[DF], doublet_or_not, indice_pairs]
 
     Exit code:
-    0 Success
-    1 OSError
+        0 Success
+        1 OSError
 
     Note:
     1. All the arrays shared by python and C program are stored in double so that we don't need to consider the data compatibility.
@@ -69,19 +69,23 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
     phi = input_phi
     Ca = input_Ca
     Dm = 15.64
-    #criteria_Ts = input_criteria_Ts if type(input_criteria_Ts) is list else [input_criteria_Ts]
-    criteria_Dms = input_criteria_Dms if type(input_criteria_Dms) is list else [input_criteria_Dms]
+    criteria_Dm = input_criteria_Dm
+    criteria_T = input_criteria_T
     
     # Two-cell system
     if system == 0:
-        angle = depend
+        angle = dependent
         ncycle = 4000
         job_name = "phi_{}_Re_0.1_Ca_{}_aggregation_1KT_ncycle_{}_np_2_angle_{}".format(phi, Ca, ncycle, angle)
     
     # Suspension system
-    else:
-        ensemble_id = depend
+    elif system == 1:
+        ensemble_id = dependent
         job_name = "h24phi{}Re0.1Ca{}WCA1zero0.8-{}".format(phi, Ca, ensemble_id)
+
+    else:
+        logging.error(" calcDoubletFraction():\nWrong system argument! The acceptable value is 0 or 1.")
+        sys.exit(1)
 
     
     # Read the preprocessed files
@@ -93,7 +97,7 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
         timesteps = int((pre_parameters[pre_parameters.index("timesteps\n")+1])[:-1]) # number of COM files
         particle_numbers = int((pre_parameters[pre_parameters.index("particle_numbers\n")+1])[:-1])
         points_per_particle = int((pre_parameters[pre_parameters.index("points_per_particle\n")+1])[:-1])
-        interval = int((pre_parameters[pre_parameters.index("interval\n")+1])[:-1]) # number of Ypos_t files
+        #interval = int((pre_parameters[pre_parameters.index("interval\n")+1])[:-1]) # number of Ypos_t files
         
         dim = np.zeros(3, dtype = np.int32)
         tmp_dim = eval((pre_parameters[pre_parameters.index("dim\n")+1])[:-1])
@@ -110,9 +114,6 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
     except OSError:
         logging.error(" calcDoubletFraction():\nNo preprocessed data for simulation: {}\n".format(job_name))
         sys.exit(1)
-
-
-    # Note: All the following computations can be parallelized
 
     # Calculate t_rot
     # ===============================================================================
@@ -131,8 +132,6 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
         Thus, f_cutoff = i_cutoff / nd -> i_cutoff = f_cutoff x timesteps
         Moreover, period = 1/f = 1/((i_max+i_cutoff)/nd) = timesteps / (i_max+i_cutoff)
         '''
-
-
     rotation_time = stats.trim_mean(Periods, 0.1) # remove the possible outliers
 
 
@@ -161,59 +160,69 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
           
     # Calculate doublet fraction
     # ===============================================================================
-    if (make_plot == 1  or make_plot == 2):
-        fig, ax1 = plt.subplots(figsize = (8, 6))
+    doublet_or_not = np.zeros((number_of_pairs, timesteps), dtype = np.int32) # 1 means there is a doublet
+    end_time = np.zeros(1, dtype = np.int32)
 
-    output_DF, output_state = [], []
-    criteria_T = input_criteria_T
-    period = int(round(criteria_T*rotation_time))
-    #print("period =", period)
-    for criteria_Dm in criteria_Dms:
-        doublet_or_not = np.zeros((number_of_pairs, timesteps - period), dtype = np.int32) # 1 means there is a doublet
-        state_series = np.zeros((number_of_pairs, timesteps - period), dtype = np.int32)
-        end_time = np.zeros(1, dtype = np.int32)
-
-        c_calcDF = lib.calcDF
-
-        c_calcDF(ctypes.c_void_p(doublet_or_not.ctypes.data), ctypes.c_void_p(diffpos.ctypes.data), ctypes.c_int(period),
-        ctypes.c_int(timesteps), ctypes.c_int(number_of_pairs), ctypes.c_double(Dm), ctypes.c_double(criteria_Dm),
-        ctypes.c_void_p(COMs_NB.ctypes.data), ctypes.c_void_p(indice_pairs.ctypes.data), ctypes.c_void_p(state_series.ctypes.data),
-        ctypes.c_void_p(end_time.ctypes.data), ctypes.c_void_p(dim.ctypes.data))
-        
-        # Assume that there is no aggregation structure which consists more than 2 partilces
-        number_of_doublets = np.sum(doublet_or_not, axis = 0)
-        # one doublet has two RBCs so to calculate doublet fraction, we need multiply # of doublets by 2
-        output_DF.append(number_of_doublets*2/particle_numbers)
-        output_state.append(state_series)
-        
-        if (make_plot == 1  or make_plot == 2):
-            ax1.plot(np.array(list(range(timesteps - period)))/2, number_of_doublets*2/particle_numbers, label = "{}Dm, {}t_rot".format(criteria_Dm, criteria_T))
+    c_calcDF = lib.calcDF
+    c_calcDF(ctypes.c_void_p(doublet_or_not.ctypes.data), ctypes.c_void_p(diffpos.ctypes.data), ctypes.c_void_p(uncorrected_diffpos.ctypes.data),
+    ctypes.c_void_p(COMs.ctypes.data), ctypes.c_void_p(COMs_NB.ctypes.data), ctypes.c_void_p(indice_pairs.ctypes.data), ctypes.c_void_p(dim.ctypes.data),
+    ctypes.c_int(timesteps), ctypes.c_int(number_of_pairs), ctypes.c_double(Dm), ctypes.c_double(criteria_Dm), ctypes.c_void_p(end_time.ctypes.data))
+    
+    # Assume that there is no aggregation structure which consists more than 2 partilces
+    number_of_doublets = np.sum(doublet_or_not, axis = 0)
+    # one doublet has two RBCs so to calculate doublet fraction, we need multiply # of doublets by 2
+    DF = number_of_doublets*2/particle_numbers
         
 
 
     # Make plot
     # ===============================================================================
-    if (make_plot == 1 or make_plot == 2):
-        ax1.set_xlabel("timesteps (in bond.vtk unit)", fontsize = 20)
+    if make_plot:
+        fig, ax1 = plt.subplots(figsize = (8, 6))
+
+        if st == None: st = 0
+        if et == None: et = end_time[0]
+        ax1.plot(np.arange(st, et), DF[st:et])
+        ax1.set_xlabel("time (WriteProps unit)", fontsize = 20)
         ax1.set_ylabel("doublet fraction", fontsize = 20)
         if system == 0:
             ax1.set_title("Two-cell system\nphi={}, Ca={}, angle={}, Re=0.1, h=24".format(phi, Ca, angle), fontsize = 20)
         else:
             ax1.set_title("Suspension\nphi={}, Ca={}, esemble {}\nRe=0.1, D=1, eqWCA=0.8, h=24".format(phi, Ca, ensemble_id), fontsize = 20)
-        ax1.legend(fontsize = 16, bbox_to_anchor=(1.1,1.2))
+        
         ax2 = ax1.twinx()
         mn, mx = ax1.get_ylim()
         ax2.set_ylim(mn*particle_numbers/2, mx*particle_numbers/2)
         ax2.set_ylabel('# of doublets', fontsize = 20)
+        '''
+        ax2.set_ylabel('distance', fontsize = 20)
+        for i in range(number_of_pairs):
+            if indice_pairs[i, 0] == 10 and indice_pairs[i, 1] == 15:
+                target_pair = i
+        ax2.plot(np.arange(st, et), diffpos[target_pair, st:et], marker="o", color = 'r', label = "corrected diff")
+        ax2.plot(np.arange(st, et), doublet_or_not[target_pair, st:et], marker="o", color = 'r', label = "target pair state")
+        ax2.plot(np.arange(st, et), uncorrected_diffpos[target_pair, st:et], marker="o", color = 'g', label = "uncorrected diff")
+        h1, l1 = ax1.get_legend_handles_labels()
+        h2, l2 = ax2.get_legend_handles_labels()
+        ax1.legend(h1+h2, l1+l2, loc=0)
+        '''
         fig.tight_layout()
+
         if make_plot == 1:
             plt.savefig("./Pictures/{}_DoubletFractionTimeSeries.png".format(job_name), dpi = 300)
             plt.close()
         else:
             plt.show()
 
-    #return [output_DF, timesteps, output_state, diffpos, COMs, COMs_NB]
-    return [output_DF, end_time[0], output_state, diffpos, particle_numbers]
+    if DEBUG:
+        print(indice_pairs[np.where(diffpos[:, 1885] < 0.8*Dm)])
+        print(indice_pairs[np.where(doublet_or_not[:, 1885])])
+
+    if outputDataType == 1:
+        return [[DF], doublet_or_not, indice_pairs]
+
+    else:
+        return [[DF], end_time[0], rotation_time]
 
 
 
@@ -470,3 +479,8 @@ def getSuspensionParameterSets():
             phis.append(phi)
 
     return [phis, parameter_set]
+
+
+# test section
+if __name__ == "__main__":
+    pass
