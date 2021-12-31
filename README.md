@@ -1,11 +1,11 @@
 # RBC Project Github Repo
 ## Introduction
 This project is An-Jun Liu's work in the Polymer Physics and Complex Fluids Group led by Professor Yeng-Long Chen at Institute of Physics, Academia Sinica.
-The two main contributions of this project is:
-1. Efficiently calculate the time series of the number of doublets in a fluid system. The utility function also outputs the time series of states (doulet state, two-singlet state, and sliding state) of a fluid system. Before I wrote this utility function, our group members could only know the doublet fraction by visualizing the fluid system and watch the animationm, which is very time-consuming.
-2. Doing data analysis based on the utility function mentioned above. The analyses include the relationship between intrinsic/relative viscosity and volume fraction/capilary number, the relationship between doublet fraction and intrinsic viscosity, and the relationship between elastic stress tensor and interparticle distance (i.e. a charatersitic of doublet formation).
+The two main contributions of this project are:
+1. Efficiently calculate the time series of the number of doublets in a fluid system. This repo also provides doublet labeling code such that the users can see the result of doublet counting by their eyes. Before I wrote this utility function, our group members could only know the doublet fraction by visualizing the fluid system and watch the animationm, which is very time-consuming.
+2. Perform data analysis based on the utility function mentioned above. The analyses include the relationship between intrinsic/relative viscosity and volume fraction/capilary number, the relationship between doublet fraction and intrinsic viscosity, and the relationship between elastic stress tensor and interparticle distance (i.e. a charatersitic of doublet formation).
 
-## Prerequisite
+## Prerequisites
 To use the utility function in this project, you have to do the following:
 1. Install python3
 2. Install numpy
