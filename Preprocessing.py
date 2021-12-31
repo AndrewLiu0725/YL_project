@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 08/02/2021
+# Last Modified Date: 12/27/2021
 # ===============================================================================
 import os
 import sys
@@ -20,8 +20,9 @@ points per particle (used in Ypos_t), and dimensions, i.e. _parameter.txt
 
 Usage:
 system=0 means two-cell system, 1 means suspension.
-verbose=0 means only showing error meassage, 1 means also showing warnning message
-e.g. python3 Preprocessing.py [simulation folder name] system=0 verbose=0
+verbose=0 means showing error meassage only, 1 means also showing warnning message
+check=0 means no need to check previous run, 1 means check it
+e.g. python3 Preprocessing.py [simulation folder name] system=0 verbose=0 check=0
 
 Exit code:
 0 success
@@ -61,8 +62,8 @@ def BinarySearch(prefix, expected_end, time_increment):
             mid = int((L+R)/2)
         return mid+1
 
-if (len(sys.argv) < 4):
-    logging.error(" Wrong command format!\nUsage:\npython3 Preprocessing.py [simulation folder name] system=[0 or 1] verbose=[0 or 1]")
+if (len(sys.argv) < 5):
+    logging.error(" Wrong command format!\nUsage:\npython3 Preprocessing.py [simulation folder name] system=[0 or 1] verbose=[0 or 1] check=[0 or 1]")
     sys.exit(4)
 
 
@@ -75,16 +76,22 @@ points_per_particle = 6
 job_name = sys.argv[1] # name of the data folder
 
 # catch flags
-system_found, verbose_found = False, False
+system_found, verbose_found, check_found = False, False, False
 for i in range(2, len(sys.argv)):
     if len(sys.argv[i]) == 8 and sys.argv[i][:6] == "system":
         system = int(sys.argv[i][-1])
-        system_found = True
+        if system == 0 or system == 1:
+            system_found = True
     elif len(sys.argv[i]) == 9 and sys.argv[i][:7] == "verbose":
         verbose = int(sys.argv[i][-1])
-        verbose_found = True
-if (not system_found) or (not verbose_found):
-    logging.error(" Wrong command format!\nUsage:\npython3 Preprocessing.py [simulation folder name] system=[0 or 1] verbose=[0 or 1]")
+        if verbose == 0 or verbose == 1:
+            verbose_found = True
+    elif len(sys.argv[i]) == 7 and sys.argv[i][:5] == "check":
+        check = int(sys.argv[i][-1])
+        if check == 0 or check == 1:
+            check_found = True
+if (not system_found) or (not verbose_found) or (not check_found):
+    logging.error(" Wrong command format!\nUsage:\npython3 Preprocessing.py [simulation folder name] system=[0 or 1] verbose=[0 or 1] check=[0 or 1]")
     sys.exit(4)
 
 
@@ -143,21 +150,22 @@ except IndexError:
 # Check if this case is already preprocessed
 # ===============================================================================
 max_timesteps = int(10000*WriteProps) # this value is about 10000 strains, may need change if run longer
-if os.path.isfile(filename_prefix + "_parameter.txt"):
-    f = open(filename_prefix + "_parameter.txt", 'r')
-    pre_parameters = f.readlines()
-    previous_timesteps = int((pre_parameters[pre_parameters.index("timesteps\n")+1])[:-1])
-    f.close()
+if check:
+    if os.path.isfile(filename_prefix + "_parameter.txt"):
+        f = open(filename_prefix + "_parameter.txt", 'r')
+        pre_parameters = f.readlines()
+        previous_timesteps = int((pre_parameters[pre_parameters.index("timesteps\n")+1])[:-1])
+        f.close()
 
-    if new_data_format_flag:
-        current_timesteps = BinarySearch(path_job+"nodePositions{}.dat", max_timesteps, WriteProps)
-    else:
-        current_timesteps = sum(1 for line in open(path_job+'sphere_props.0.dat'))-1
-    
-    if current_timesteps <= previous_timesteps:
-        if verbose:
-            logging.warning(" Job \"{}\" is already preprocessed.".format(job_name))
-        sys.exit(1)
+        if new_data_format_flag:
+            current_timesteps = BinarySearch(path_job+"nodePositions{}.dat", max_timesteps, WriteProps)
+        else:
+            current_timesteps = sum(1 for line in open(path_job+'sphere_props.0.dat'))-1
+        
+        if current_timesteps <= previous_timesteps:
+            if verbose:
+                logging.warning(" Job \"{}\" is already preprocessed.".format(job_name))
+            sys.exit(1)
 
 
 

@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 04/27/2021
+# Last Modified Date: 12/29/2021
 # ===============================================================================
 import os
 import subprocess
@@ -70,7 +70,7 @@ for fn in os.listdir(path):
     if (fn[0] == "h") and (os.path.isdir(path+fn)):
         result = parser(fn)
         if result[0] in phis:
-            subprocess.call(["python3", "Preprocessing.py", fn, "system=1", "verbose=0"], stdout = f_pre, stderr = f_pre)
+            subprocess.call(["python3", "Preprocessing.py", fn, "system=1", "verbose=0", "check=0"], stdout = f_pre, stderr = f_pre)
             count += 1
 
             if count/expected_count >= progress:
