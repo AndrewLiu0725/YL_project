@@ -1,8 +1,8 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 12/30/2021
+# Last Modified Date: 01/10/2022
 # ===============================================================================
-from DoubletRecognitionTest import calcDoubletFraction
+from RBC_Utilities import calcDoubletFraction
 import numpy as np 
 
 """
