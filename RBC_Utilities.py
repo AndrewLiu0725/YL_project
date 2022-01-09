@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 12/31/2021
+# Last Modified Date: 01/10/2022
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -49,12 +49,15 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
     Output:
         outputDataType = 0:
             return [[DF], end_time[0], rotation_time]
-        outputDataType = 1:
+        outputDataType = 1: (DoubletLabeling.py)
             return [[DF], doublet_or_not, indice_pairs]
+        outputDataType = 2: (RotationTime_vs_Ca_SeperatedState.py)
+            return [doublet_or_not, indice_pairs, number_of_pairs, particle_numbers, timesteps, Ypos_t, cutoff_frequency, points_per_particle, interval]
 
     Exit code:
         0 Success
         1 OSError
+        2 WrongArgument
 
     Note:
     1. All the arrays shared by python and C program are stored in double so that we don't need to consider the data compatibility.
@@ -85,7 +88,7 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
 
     else:
         logging.error(" calcDoubletFraction():\nWrong system argument! The acceptable value is 0 or 1.")
-        sys.exit(1)
+        sys.exit(2)
 
     
     # Read the preprocessed files
@@ -97,7 +100,7 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
         timesteps = int((pre_parameters[pre_parameters.index("timesteps\n")+1])[:-1]) # number of COM files
         particle_numbers = int((pre_parameters[pre_parameters.index("particle_numbers\n")+1])[:-1])
         points_per_particle = int((pre_parameters[pre_parameters.index("points_per_particle\n")+1])[:-1])
-        #interval = int((pre_parameters[pre_parameters.index("interval\n")+1])[:-1]) # number of Ypos_t files
+        interval = int((pre_parameters[pre_parameters.index("interval\n")+1])[:-1]) # number of Ypos_t files
         
         dim = np.zeros(3, dtype = np.int32)
         tmp_dim = eval((pre_parameters[pre_parameters.index("dim\n")+1])[:-1])
@@ -218,11 +221,20 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
         print(indice_pairs[np.where(diffpos[:, 1885] < 0.8*Dm)])
         print(indice_pairs[np.where(doublet_or_not[:, 1885])])
 
-    if outputDataType == 1:
+
+    # output
+    if outputDataType == 0:
+        [[DF], end_time[0], rotation_time]
+
+    elif outputDataType == 1:
         return [[DF], doublet_or_not, indice_pairs]
 
+    elif outputDataType == 2:
+        return [doublet_or_not, indice_pairs, number_of_pairs, particle_numbers, timesteps, Ypos_t, cutoff_frequency, points_per_particle, interval]
+
     else:
-        return [[DF], end_time[0], rotation_time]
+        logging.error(" calcDoubletFraction():\nWrong outputDataType argument! Please refer to the docstring to view the acceptable values.")
+        sys.exit(2)
 
 
 
