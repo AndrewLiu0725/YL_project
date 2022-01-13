@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 01/10/2022
+# Last Modified Date: 01/13/2022
 # ===============================================================================
 import numpy as np
 from scipy import stats
@@ -143,11 +143,10 @@ for system in ['TwoCell', 'Suspension']:
     # suspension
     else:
         if SAVE:
-            [phi_range, parameter_set] = getSuspensionParameterSets()
-            phi_range.sort()
-        else:
-            phi_range = [2.3994, 2.9993, 3.4492, 3.8991, 4.9488, 5.9986]
-            Ca_range = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2]
+            [phi_range, parameter_set] = getSuspensionParameterSets() # need to know the ensemble id
+
+        phi_range = [2.3994, 2.9993, 3.4492, 3.8991, 4.9488, 5.9986]
+        Ca_range = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2]
         chosen_phi = [3.8991, 4.9488, 5.9986]
         true_phi_range = phi_range
 
