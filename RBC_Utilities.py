@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 01/10/2022
+# Last Modified Date: 01/13/2022
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -436,7 +436,7 @@ def getRelativeViscosity(input_phi, input_Ca, ncycle, depend, system):
 
 def parser(string):
     """
-    This parser is utility function for getSuspensionParameterSets().
+    This parser is a utility function for getSuspensionParameterSets().
     """
     # output [phi, Ca, ensemble id]
     string = string.split("-")
@@ -473,7 +473,7 @@ def getSuspensionParameterSets():
     for fn in os.listdir(path):
         if (fn[0] == "h") and (os.path.isdir(path+fn)):
             result = parser(fn)
-            [phi, Ca, ensemble_id] = result
+            [phi, Ca, ensemble_id] = result # [float, float, int]
             if phi in parameter_set.keys():
                 if Ca in parameter_set[phi].keys():
                     parameter_set[phi][Ca].append(ensemble_id)
