@@ -22,7 +22,7 @@ DEBUG = 0
 
 # on server set flag = 1, on local set flag = 0
 # sevrer: /userdata4/ajliu/ <=>  local: /Users/andrewliu/remote_disk/
-flag = 1 
+flag = 1
 
 if flag == 1:
     path_preprocess = "/userdata4/ajliu/Data_Transfer/"
@@ -74,7 +74,7 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
     Dm = 15.64
     criteria_Dm = input_criteria_Dm
     criteria_T = input_criteria_T
-    
+
     # Two-cell system
     if system == 0:
         angle = dependent
@@ -117,6 +117,7 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
     except OSError:
         logging.error(" calcDoubletFraction():\nNo preprocessed data for simulation: {}\n".format(job_name))
         sys.exit(1)
+
 
     # Calculate t_rot
     # ===============================================================================
@@ -224,7 +225,7 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
 
     # output
     if outputDataType == 0:
-        [[DF], end_time[0], rotation_time]
+        return [[DF], end_time[0], rotation_time]
 
     elif outputDataType == 1:
         return [[DF], doublet_or_not, indice_pairs]
