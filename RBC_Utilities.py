@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 01/18/2022
+# Last Modified Date: 01/19/2022
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -239,7 +239,7 @@ def calcDoubletFraction(input_phi, input_Ca, input_criteria_T, input_criteria_Dm
 
 
 
-def getStress(input_phi, input_Ca, stress_category_id, ncycle, depend, system):
+def getStress(input_phi, input_Ca, stress_category_id, ncycle, dependent, system):
     """
     Input:
 
@@ -251,7 +251,7 @@ def getStress(input_phi, input_Ca, stress_category_id, ncycle, depend, system):
 
     system = 0 means two-cell system, 1 means suspension
 
-    depend means angle when system = 0, esemble id when system = 1
+    dependent means angle when system = 0, esemble id when system = 1
 
     Output:
 
@@ -274,12 +274,12 @@ def getStress(input_phi, input_Ca, stress_category_id, ncycle, depend, system):
     # ===============================================================================
     # Two-cell system
     if system == 0:
-        angle = depend
+        angle = dependent
         path = path_AJ + "phi_{}_Re_0.1_Ca_{}_aggregation_1KT_ncycle_{}_np_2_angle_{}/data/{}.dat".format(phi, Ca, ncycle, angle, stress_category[stress_category_id])
     
     # Suspesion system
     else:
-        ensemble_id = depend
+        ensemble_id = dependent
         path = path_CT + "h24_phi{}_Re0.1_Ca{}_WCA1_zero0.8-{}/data/{}.dat".format(phi, Ca, ensemble_id, stress_category[stress_category_id])
         if not os.path.isfile(path):
             path = path_CT + "h24phi{}Re0.1Ca{}WCA1zero0.8-{}/data/{}.dat".format(phi, Ca, ensemble_id, stress_category[stress_category_id])
@@ -306,17 +306,17 @@ def getStress(input_phi, input_Ca, stress_category_id, ncycle, depend, system):
 
 
 
-def getIntrinsicViscosity(input_phi, input_Ca, ncycle, depend, system):
+def getIntrinsicViscosity(input_phi, input_Ca, ncycle, dependent, system):
     """
     Input:
 
     input_phi is in percentage unit
 
-    ncycle is only meaningful for two-cell system, i.e. system = 1
+    ncycle is only meaningful for two-cell system, i.e. system = 0
 
     system = 0 means two-cell system, 1 means suspension
 
-    depend means angle when system = 0, esemble id when system = 1
+    dependent means angle when system = 0, esemble id when system = 1
 
     Output:
 
@@ -339,11 +339,11 @@ def getIntrinsicViscosity(input_phi, input_Ca, ncycle, depend, system):
     # ===============================================================================
     # Two-cell system
     if system == 0:
-        angle = depend
+        angle = dependent
         path = path_AJ + "phi_{}_Re_0.1_Ca_{}_aggregation_1KT_ncycle_{}_np_2_angle_{}/data/wallStress.dat".format(phi, Ca, ncycle, angle)
     # Suspension system
     else:
-        ensemble_id = depend
+        ensemble_id = dependent
         path = path_CT + "h24_phi{}_Re0.1_Ca{}_WCA1_zero0.8-{}/data/wallStress.dat".format(phi, Ca, ensemble_id)
         if not os.path.isfile(path):
             path = path_CT + "h24phi{}Re0.1Ca{}WCA1zero0.8-{}/data/wallStress.dat".format(phi, Ca, ensemble_id)
@@ -371,17 +371,17 @@ def getIntrinsicViscosity(input_phi, input_Ca, ncycle, depend, system):
 
 
 
-def getRelativeViscosity(input_phi, input_Ca, ncycle, depend, system):
+def getRelativeViscosity(input_phi, input_Ca, ncycle, dependent, system):
     """
     Input:
 
     input_phi is in percentage unit
 
-    ncycle is only meaningful for two-cell system, i.e. system = 1
+    ncycle is only meaningful for two-cell system, i.e. system = 0
 
     system = 0 means two-cell system, 1 means suspension
 
-    depend means angle when system = 0, esemble id when system = 1
+    dependent means angle when system = 0, esemble id when system = 1
 
     Output:
     An numpy array of length t, i.e. the time series of eta/eta_f
@@ -403,11 +403,11 @@ def getRelativeViscosity(input_phi, input_Ca, ncycle, depend, system):
     # ===============================================================================
     # Two-cell system
     if system == 0:
-        angle = depend
+        angle = dependent
         path = path_AJ + "phi_{}_Re_0.1_Ca_{}_aggregation_1KT_ncycle_{}_np_2_angle_{}/data/wallStress.dat".format(phi, Ca, ncycle, angle)
     # Suspension system
     else:
-        ensemble_id = depend
+        ensemble_id = dependent
         path = path_CT + "h24_phi{}_Re0.1_Ca{}_WCA1_zero0.8-{}/data/wallStress.dat".format(phi, Ca, ensemble_id)
         if not os.path.isfile(path):
             path = path_CT + "h24phi{}Re0.1Ca{}WCA1zero0.8-{}/data/wallStress.dat".format(phi, Ca, ensemble_id)
