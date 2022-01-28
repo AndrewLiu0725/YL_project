@@ -226,18 +226,18 @@ for i in range(2): # run over singlet and doublet
     x_fit = np.linspace(min(x), max(x), 100)
     y_fit = predict(x_fit)
     ax.plot(x_fit, y_fit, linestyle='--', linewidth=3, label='doublet fitting line' if i else 'singlet fitting line', color = 'r' if i else 'b')
-    ax.set_xlabel("Ca", fontsize = 20)
-    ax.set_ylabel("{}".format(r'$\dot \gamma t$'), fontsize = 20)
-    ax.tick_params(labelsize = 15)
-    #ax.legend(frameon=False, bbox_to_anchor=(1.0, 1.0), loc='upper left')
-    ax.legend(frameon=False)
-    fig.tight_layout()
-    if not SHOW:
-        fig.savefig("Pictures/RotationTime_vs_Ca_combined.png", dpi = 200)
+
+ax.set_xlabel("Ca", fontsize = 20)
+ax.set_ylabel("{}".format(r'$\dot \gamma t$'), fontsize = 20)
+ax.tick_params(labelsize = 15)
+#ax.legend(frameon=False, bbox_to_anchor=(1.0, 1.0), loc='upper left')
+ax.legend(frameon=False)
+#fig.tight_layout()
 
 if SHOW:
     plt.show()
 else:
+    fig.savefig("Pictures/RotationTime_vs_Ca_combined.png", dpi = 200)
     plt.close()
 
 if SAVE:
