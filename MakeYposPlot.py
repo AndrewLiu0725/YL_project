@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 SHOW = 0 # 0 for save figures, 1 for show plots
+plt.rcParams['font.family'] = 'DeJavu Serif'
+plt.rcParams['font.serif'] = ['Times New Roman']
 
 data = np.load("./Data/phi_4.7_Re_0.1_Ca_0.01_aggregation_1KT_ncycle_4000_np_2_angle_0_Ypos_t.npy")
 #data = np.load("../../remote_disk/Data_Transfer/phi_6.9_Re_0.1_Ca_0.2_aggregation_1KT_ncycle_4000_np_2_angle_60_Ypos_t.npy")

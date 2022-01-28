@@ -2,6 +2,7 @@
 # Copyright 2021 An-Jun Liu
 # Last Modified Date: 01/13/2022
 # ===============================================================================
+from turtle import color
 import numpy as np
 from scipy import stats
 import math
@@ -24,7 +25,7 @@ path_AJ = "/userdata4/ajliu/RBC_doublet/Data/"
 
 SAVE = 0
 READ = 1
-SHOW = 1
+SHOW = 0
 print("Setting:\nSAVE:{}, READ:{}, SHOW:{}".format(SAVE, READ, SHOW))
 window_width = 100
 threshold = 0.9
@@ -119,8 +120,14 @@ if READ:
     with open("Data/T_rot_TCandS_w_{}_k_{}.pickle".format(window_width, threshold), 'rb') as handle:
         data = pickle.load(handle) # data[system][phi] = [Cas, t_rot, t_rot_std]
 
-data_marker = 'o'
 criteria_1 = 3
+color_list = ['orange', 'green']
+
+plt.rcParams['font.family'] = 'DeJavu Serif'
+plt.rcParams['font.serif'] = ['Times New Roman']
+# initialize the plots
+
+fig, ax = plt.subplots(figsize = (9, 6))
 
 # run over two-cell and suspension system
 # ===============================================================================
@@ -139,7 +146,7 @@ for system in ['TwoCell', 'Suspension']:
         angle_range = [90 - 10*j for j in range(18)]
         phi_range.sort()
         true_phi_range.sort()
-        chosen_phi = [4.0, 5.0, 6.0]
+        chosen_phi = [4.0, 6.0]
     # suspension
     else:
         if SAVE:
@@ -147,17 +154,8 @@ for system in ['TwoCell', 'Suspension']:
 
         phi_range = [2.3994, 2.9993, 3.4492, 3.8991, 4.9488, 5.9986]
         Ca_range = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2]
-        chosen_phi = [3.8991, 4.9488, 5.9986]
+        chosen_phi = [3.8991, 5.9986]
         true_phi_range = phi_range
-
-    # initialize the plots
-    fig1, ax1 = plt.subplots(figsize = (9, 6))
-    fig2, ax2 = plt.subplots(figsize = (9, 6))
-    fig3, ax3 = plt.subplots(figsize = (9, 6))
-
-    ax_list = [ax1, ax2, ax3]
-    fig_list = [fig1, fig2, fig3]
-    pic_name_suffix = ["", "_DoubletOnly", "_SingletsOnly"]
 
     # run over phi
     for phi_index, phi in enumerate(phi_range):
@@ -207,46 +205,40 @@ for system in ['TwoCell', 'Suspension']:
             data[system][phi] = [Cas, t_rot, t_rot_std]
 
         # plot for this phi
-        for ax_id, ax in enumerate(ax_list):
-            if ax_id == 0:
-                color_ref = ax.scatter(Cas[1], t_rot[1], 
-                label = '{} = {}%\n-{}'.format(r'$\phi$', true_phi_range[phi_index], "doublet"), marker = data_marker)
+        for state in range(2):
+            ax.scatter(Cas[state], t_rot[state], marker='o'if system=='Suspension' else 's',
+            facecolors=color_list[chosen_phi.index(phi)]if state else 'none', edgecolors=color_list[chosen_phi.index(phi)],
+            label='{}={:.2}%-{}'.format(r'$\phi$', true_phi_range[phi_index], "doublet"if state else 'singlet'))
+            #label='{} System\n{}={:.2}%-{}'.format('Two-Cell'if system=='TwoCell' else 'Suspension', r'$\phi$', true_phi_range[phi_index], "doublet"if state else 'singlet')
 
-                ax.scatter(Cas[0], t_rot[0], facecolors = 'none', edgecolors = color_ref.get_facecolors()[0].tolist(), 
-                label = '{} = {}%\n-{}'.format(r'$\phi$', true_phi_range[phi_index], "singlets"), marker = data_marker)
 
-            elif ax_id == 1:
-                ax.errorbar(Cas[1], t_rot[1], yerr = t_rot_std[1], 
-                label = '{} = {}%\n-{}'.format(r'$\phi$', true_phi_range[phi_index], "doublet"), capsize = 2)
+for i in range(2): # run over singlet and doublet
+    y, x = [], []
+    for system in ['TwoCell', 'Suspension']:
+        chosen_phi = [4.0, 6.0] if system == 'TwoCell' else [3.8991, 5.9986]
+        for phi in chosen_phi:
+            y += data[system][phi][1][i]
+            x += data[system][phi][0][i]
+    model = np.polyfit(x, y, 1)
+    #print('{}System'.format(system), 'doublet fitting line' if i else 'singlet fitting line', ':', model[0])
+    print('doublet fitting line' if i else 'singlet fitting line', ':', model[0])
+    predict = np.poly1d(model)
+    x_fit = np.linspace(min(x), max(x), 100)
+    y_fit = predict(x_fit)
+    ax.plot(x_fit, y_fit, linestyle='--', linewidth=3, label='doublet fitting line' if i else 'singlet fitting line', color = 'r' if i else 'b')
+    ax.set_xlabel("Ca", fontsize = 20)
+    ax.set_ylabel("{}".format(r'$\dot \gamma t$'), fontsize = 20)
+    ax.tick_params(labelsize = 15)
+    #ax.legend(frameon=False, bbox_to_anchor=(1.0, 1.0), loc='upper left')
+    ax.legend(frameon=False)
+    fig.tight_layout()
+    if not SHOW:
+        fig.savefig("Pictures/RotationTime_vs_Ca_combined.png", dpi = 200)
 
-            else:
-                ax.errorbar(Cas[0], t_rot[0], yerr = t_rot_std[0], 
-                label = '{} = {}%\n-{}'.format(r'$\phi$', true_phi_range[phi_index], "singlets"), capsize = 2)
-
-    for ax_id, ax in enumerate(ax_list):
-        if ax_id == 0:
-            for i in range(2):
-                y, x = [], []
-                for phi in chosen_phi:
-                    y += data[system][phi][1][i]
-                    x += data[system][phi][0][i]
-                model = np.polyfit(x, y, 1)
-                print('{}System'.format(system), 'doublet fitting line' if i else 'singlets fitting line', ':', model[0])
-                predict = np.poly1d(model)
-                x_fit = np.linspace(min(x), max(x), 100)
-                y_fit = predict(x_fit)
-                ax.plot(x_fit, y_fit, linestyle = '--', linewidth = 3, label = 'doublet fitting line' if i else 'singlets fitting line', color = 'r' if i else 'b')
-        ax.set_xlabel("Ca", fontsize = 20)
-        ax.set_ylabel("{}".format(r'$\dot \gamma t$'), fontsize = 20)
-        ax.tick_params(labelsize = 15)
-        fig_list[ax_id].tight_layout()
-        if not SHOW:
-            fig_list[ax_id].savefig("Pictures/{}System_RotationTime_vs_Ca{}.png".format(system, pic_name_suffix[ax_id]), dpi = 200)
-    
-    if SHOW:
-        plt.show()
-    else:
-        plt.close()
+if SHOW:
+    plt.show()
+else:
+    plt.close()
 
 if SAVE:
     with open("T_rot_TCandS_w_{}_k_{}.pickle".format(window_width, threshold), 'wb') as handle:

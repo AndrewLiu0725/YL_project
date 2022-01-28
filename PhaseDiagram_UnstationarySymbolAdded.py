@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 10/17/2021
+# Last Modified Date: 01/13/2022
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -60,7 +60,7 @@ def makePlot(variable_type, system, division_type, unstationary_symbol_style, al
 
 
     # read the data for phase diagram (grid phi, grid Ca, df)
-    with open("Data/PhaseDiagram_{}.pickle".format(system), 'rb') as handle:
+    with open("Data/PhaseDiagram_{}_new.pickle".format(system), 'rb') as handle:
         data_PD = pickle.load(handle)
 
     # get the positions of the unstationary cases
@@ -73,11 +73,13 @@ def makePlot(variable_type, system, division_type, unstationary_symbol_style, al
 
     ### Plot
     # plot the phase diagram
+    plt.rcParams['font.family'] = 'DeJavu Serif'
+    plt.rcParams['font.serif'] = ['Times New Roman']
     fig, ax = plt.subplots(figsize = (16,12))
     [grid_phi, grid_Ca, df, index_X, index_Y] = data_PD
             
     X, Y = np.meshgrid(grid_phi, grid_Ca)
-    im = ax.pcolormesh(Y, X, Z(index_X, index_Y, df), cmap = cm.coolwarm)
+    im = ax.pcolormesh(Y, X, Z(index_X, index_Y, df), cmap=cm.coolwarm, vmin=0, vmax=0.6 if system == "Suspension" else 0.6)
     cb = fig.colorbar(im, ax = ax)
     cb.ax.tick_params(labelsize = 25)
     #ax.set_title("Phase Diagram of {} vs Ca ({} system)".format(r'$\phi$', system), fontsize = 30)
@@ -101,8 +103,10 @@ def makePlot(variable_type, system, division_type, unstationary_symbol_style, al
     ax.legend(handles = [void_marker], bbox_to_anchor=(0.9, 1.07), loc='upper left', prop={'size': 25}, frameon = False)
 
     fig.tight_layout()
+    
     plt.savefig('./Pictures/PhaseDiagram_UnstationarySymbolAdded/{}System_PhaseDiagram_UnstationarySymbolAdded_{}_{}_alpha_{}_SymbolStyle_{}.png'.format(
         system, "IntrinsicViscosity" if variable_type == "IV" else "DoubletFraction",division_type, alpha, unstationary_symbol_style), dpi = 200)
+    
     #plt.show()
 
 

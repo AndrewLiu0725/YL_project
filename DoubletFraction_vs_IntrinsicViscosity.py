@@ -7,9 +7,11 @@ import numpy as np
 from RBC_Utilities import calcDoubletFraction, getIntrinsicViscosity, getSuspensionParameterSets
 
 def makeDFvsIVplot(ps, plotType):
-    fig, ax = plt.subplots(figsize = (8, 6))
+    
     plt.rcParams['font.family'] = 'DeJavu Serif'
     plt.rcParams['font.serif'] = ['Times New Roman']
+    
+    fig, ax = plt.subplots(figsize = (8, 6))
     [_, parameter_set] = getSuspensionParameterSets()
     st = 5
 
@@ -43,13 +45,13 @@ def makeDFvsIVplot(ps, plotType):
             iv_total = [np.mean(data[df]) for df in df_total]
             iv_std = [np.std(data[df]) for df in df_total]
             #ax.errorbar(df_total, iv_total, iv_std, color='b', capsize = 2, marker = 's')
-            ax.plot(df_total, iv_total, marker='s', markerfacecolor='None', linestyle='None', label='{}={}%\nCa={}'.format(r'$\Phi$', phi, Ca))
+            ax.plot(df_total, iv_total, marker='s', markerfacecolor='None', linestyle='None', label='{}={:.2}%\nCa={}'.format(r'$\phi$', phi, Ca))
 
         model = np.polyfit(df_total, iv_total, 1)
         predict = np.poly1d(model)
         x_fit = np.linspace(min(df_total), max(df_total), 100)
         y_fit = predict(x_fit)
-        ax.plot(x_fit, y_fit, linestyle='--', linewidth=3, color=plt.gca().lines[-1].get_color(), label='{}={}%\nCa={}'.format(r'$\Phi$', phi, Ca))
+        ax.plot(x_fit, y_fit, linestyle='--', linewidth=3, color=plt.gca().lines[-1].get_color(), label='{}={:.2}%\nCa={}'.format(r'$\phi$', phi, Ca))
 
     ax.set_ylabel(r'$\left[ \eta \right]$', fontsize = 15)
     ax.set_xlabel(r'$\Phi$', fontsize = 15)

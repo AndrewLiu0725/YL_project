@@ -11,6 +11,8 @@ The data is pre-calculated.
 """
 
 MAKE_PLOT = 1
+plt.rcParams['font.family'] = 'DeJavu Serif'
+plt.rcParams['font.serif'] = ['Times New Roman']
 
 data = np.load("Data/suspension_viscosity_0.5.npy")
 

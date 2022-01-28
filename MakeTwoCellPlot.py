@@ -11,6 +11,8 @@ The data is pre-calculated.
 """
 
 MAKE_PLOT = 1
+plt.rcParams['font.family'] = 'DeJavu Serif'
+plt.rcParams['font.serif'] = ['Times New Roman']
 
 data = np.load("Data/viscosity_data_0.5.npy")
 
@@ -68,7 +70,7 @@ for i in range(2): # run over iv and rv
         plt.xticks(fontsize = 20)
         plt.ylabel(r'$\left[ \eta \right]$' if i == 0 else r'$\eta _{rel}$', fontsize = 25)
         plt.yticks(fontsize = 20)
-        plt.legend(fontsize = 20, frameon = False)
+        plt.legend(fontsize = 20, frameon=False)
         if MAKE_PLOT:
             plt.savefig("./Pictures/Viscosity_vs_phi_Ca/TwoCellSystem_{}_vs_phi_{}ErrorBar.png".format("IntrinsicViscosity" if i == 0 else "RelativeViscosity", "with" if j == 0 else "without"), dpi = 300)
             plt.close()

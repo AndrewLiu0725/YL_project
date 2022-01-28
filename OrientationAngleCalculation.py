@@ -157,6 +157,9 @@ def run():
 def makePlot(save, filepath, Ca_range_data, Ca_range_plot, suffix):
     phi_range = np.array([2.3994, 2.9993, 3.4492, 3.8991, 4.9488, 5.9986])
     data = np.load(filepath)
+    
+    plt.rcParams['font.family'] = 'DeJavu Serif'
+    plt.rcParams['font.serif'] = ['Times New Roman']
 
     fig, ax = plt.subplots(figsize = (9, 6))
 
