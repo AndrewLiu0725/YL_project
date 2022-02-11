@@ -1,13 +1,12 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 05/03/2021
+# Last Modified Date: 02/10/2022
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
 import time
 import datetime
 from RBC_Utilities import calcDoubletFraction, getSuspensionParameterSets
-import os
 import pickle
 
 """
@@ -15,9 +14,9 @@ This code is to plot ensemble averaged doublet fraction time series for suspensi
 It also provides flags to save the ensemble averaged and individual time series.
 """
 
-SAVE_ENSEMBLE_AVERAGED = 0
-SAVE_INDIVIDUAL = 1
-PLOT = 0
+SAVE_ENSEMBLE_AVERAGED = 1
+SAVE_INDIVIDUAL = 0
+PLOT = 0 # make ensemble averaged doublet fraction vs time plot for each set of parameters
 print("FLAGS: SAVE_ENSEMBLE_AVERAGED = {}, SAVE_INDIVIDUAL = {}, PLOT = {}".format(SAVE_ENSEMBLE_AVERAGED, SAVE_INDIVIDUAL, PLOT))
 
 start_time = time.time()
