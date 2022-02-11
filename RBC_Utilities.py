@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 01/19/2022
+# Last Modified Date: 02/10/2022
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -441,7 +441,7 @@ def parser(string):
     """
     # output [phi, Ca, ensemble id]
     string = string.split("-")
-    ensemble_id = int(string[1])
+    ensemble_id = string[1] # no need to convert it to int
     # format: h24_phi4.4989_Re0.1_Ca0.06_WCA1_zero0.8-8
     if "_" in string[0]:
         string = string[0].split("_")
