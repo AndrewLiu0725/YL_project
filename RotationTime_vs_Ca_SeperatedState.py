@@ -2,7 +2,6 @@
 # Copyright 2021 An-Jun Liu
 # Last Modified Date: 01/13/2022
 # ===============================================================================
-from turtle import color
 import numpy as np
 from scipy import stats
 import math
@@ -228,7 +227,7 @@ for i in range(2): # run over singlet and doublet
     ax.plot(x_fit, y_fit, linestyle='--', linewidth=3, label='doublet fitting line' if i else 'singlet fitting line', color = 'r' if i else 'b')
 
 ax.set_xlabel("Ca", fontsize = 20)
-ax.set_ylabel("{}".format(r'$\dot \gamma t$'), fontsize = 20)
+ax.set_ylabel("{}".format(r'$\gamma _{rot}$'), fontsize = 20)
 ax.tick_params(labelsize = 15)
 #ax.legend(frameon=False, bbox_to_anchor=(1.0, 1.0), loc='upper left')
 #ax.legend(frameon=False)
