@@ -226,6 +226,7 @@ for i in range(2): # run over singlet and doublet
     x_fit = np.linspace(min(x), max(x), 100)
     y_fit = predict(x_fit)
     ax.plot(x_fit, y_fit, linestyle='--', linewidth=3, label='doublet fitting line' if i else 'singlet fitting line', color = 'r' if i else 'b')
+    #np.savetxt('Data/T_rot_vs_Ca_FittingLines_{}.txt'.format('doublet' if i else "singlet") , np.array([x_fit,y_fit]).transpose(), header='Ca T_rot')
 
 ax.set_xlabel("Ca", fontsize = 20)
 ax.set_ylabel("{}".format(r'$\gamma _{rot}$'), fontsize = 20)
