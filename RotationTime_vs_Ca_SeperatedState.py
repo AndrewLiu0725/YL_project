@@ -1,11 +1,12 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 01/13/2022
+# Last Modified Date: 08/06/2022
 # ===============================================================================
 import numpy as np
 from scipy import stats
 import math
 import matplotlib.pyplot as plt 
+from matplotlib.ticker import MultipleLocator
 from RBC_Utilities import getSuspensionParameterSets, calcDoubletFraction
 import time
 import datetime
@@ -201,7 +202,7 @@ for system in ['TwoCell', 'Suspension']:
                         Cas[i].append(Ca)
 
         if SAVE:
-            data[system][phi] = [Cas, t_rot, t_rot_std]
+            data[system][phi] = [Cas, t_rot, t_rot_std] # data[system][phi][Cas/t_rot/t_rot_std][singlet/doublet]
 
         # plot for this phi
         for state in range(2):
@@ -216,8 +217,8 @@ for i in range(2): # run over singlet and doublet
     for system in ['TwoCell', 'Suspension']:
         chosen_phi = [4.0, 6.0] if system == 'TwoCell' else [3.8991, 5.9986]
         for phi in chosen_phi:
-            y += data[system][phi][1][i]
-            x += data[system][phi][0][i]
+            y += data[system][phi][1][i] # t_rot
+            x += data[system][phi][0][i] # Cas
     model = np.polyfit(x, y, 1)
     #print('{}System'.format(system), 'doublet fitting line' if i else 'singlet fitting line', ':', model[0])
     print('doublet fitting line' if i else 'singlet fitting line', ':', model[0])
@@ -229,6 +230,10 @@ for i in range(2): # run over singlet and doublet
 ax.set_xlabel("Ca", fontsize = 20)
 ax.set_ylabel("{}".format(r'$\gamma _{rot}$'), fontsize = 20)
 ax.tick_params(labelsize = 15)
+ax.xaxis.set_major_locator(MultipleLocator(0.05))
+ax.xaxis.set_minor_locator(MultipleLocator(0.025))
+ax.yaxis.set_major_locator(MultipleLocator(5))
+ax.yaxis.set_minor_locator(MultipleLocator(2.5))
 #ax.legend(frameon=False, bbox_to_anchor=(1.0, 1.0), loc='upper left')
 #ax.legend(frameon=False)
 #fig.tight_layout()
