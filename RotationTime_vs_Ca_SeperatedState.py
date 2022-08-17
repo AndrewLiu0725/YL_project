@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 08/06/2022
+# Last Modified Date: 08/16/2022
 # ===============================================================================
 import numpy as np
 from scipy import stats
@@ -228,9 +228,9 @@ for i in range(2): # run over singlet and doublet
     ax.plot(x_fit, y_fit, linestyle='--', linewidth=3, label='doublet fitting line' if i else 'singlet fitting line', color = 'r' if i else 'b')
     #np.savetxt('Data/T_rot_vs_Ca_FittingLines_{}.txt'.format('doublet' if i else "singlet") , np.array([x_fit,y_fit]).transpose(), header='Ca T_rot')
 
-ax.set_xlabel("Ca", fontsize = 20)
-ax.set_ylabel("{}".format(r'$\gamma _{rot}$'), fontsize = 20)
-ax.tick_params(labelsize = 15)
+ax.set_xlabel("Ca", fontsize=20)
+ax.set_ylabel("{}".format(r'$\gamma _{rot}$'), fontsize=20)
+ax.tick_params(which='both', labelsize=15, width=2, length=8, direction='in')
 ax.xaxis.set_major_locator(MultipleLocator(0.05))
 ax.xaxis.set_minor_locator(MultipleLocator(0.025))
 ax.yaxis.set_major_locator(MultipleLocator(5))

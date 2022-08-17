@@ -2,7 +2,6 @@
 # Copyright 2021 An-Jun Liu
 # Last Modified Date: 08/16/2022
 # ===============================================================================
-from turtle import width
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
@@ -104,8 +103,7 @@ def makePlot(variable_type, system, division_type, unstationary_symbol_style, al
 
     ax.set_xlabel('Ca', fontsize = 35)
     ax.set_ylabel(r'$\phi$'+"(%)", fontsize = 40)
-    ax.tick_params(labelsize=30)
-    ax.tick_params(which='both', width=3)
+    ax.tick_params(which='both', labelsize=30, width=4, length=12, direction='in')
     ax.xaxis.set_major_locator(MultipleLocator(0.05))
     ax.xaxis.set_minor_locator(MultipleLocator(0.025))
     ax.yaxis.set_major_locator(MultipleLocator(1))

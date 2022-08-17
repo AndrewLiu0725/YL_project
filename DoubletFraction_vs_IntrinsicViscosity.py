@@ -67,8 +67,7 @@ def makeDFvsIVplot(ps, plotType, plotTitle, plotName):
 
     ax.set_ylabel(r'$\left[ \eta \right]$', fontsize=20)
     ax.set_xlabel(r'$\Phi$', fontsize=20)
-    ax.tick_params(labelsize=15)
-    ax.tick_params(which='both', width=1)
+    ax.tick_params(which='both', labelsize=15, width=2, length=8, direction='in')
     ax.xaxis.set_major_locator(MaxNLocator(5))
     ax.xaxis.set_minor_locator(MaxNLocator(10))
     ax.yaxis.set_major_locator(MaxNLocator(5)) 
