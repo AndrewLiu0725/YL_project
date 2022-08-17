@@ -1,26 +1,30 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 05/28/2022
+# Last Modified Date: 08/16/2022
 # ===============================================================================
-from tkinter import font
+#from tkinter import font
 import matplotlib.pyplot as plt
 import numpy as np 
 from RBC_Utilities import calcDoubletFraction, getIntrinsicViscosity, getSuspensionParameterSets
+from matplotlib.ticker import MaxNLocator
 
 def makeDFvsIVplot(ps, plotType, plotTitle, plotName):
     '''
     plotType: 0 for making scatter plots, 1 for averaging intrinsic viscosity w.r.t. to individual doublet fraction before making the plot
     '''
     
-    plt.rcParams['font.family'] = 'DeJavu Serif'
-    plt.rcParams['font.serif'] = ['Times New Roman']
+    #plt.rcParams['font.family'] = 'DeJavu Serif'
+    #plt.rcParams['font.serif'] = ['Times New Roman']
     
     fig, ax = plt.subplots(figsize = (8, 6))
     [_, parameter_set] = getSuspensionParameterSets()
     st = 5
 
     for [phi, Ca] in ps:
-        parameter = '{}={:.2}%'.format(r'$\phi$', phi) if plotTitle[0] == 'C' else 'Ca={}'.format(Ca)
+        if len(plotTitle) > 0:
+            parameter = '{}={:.2}%'.format(r'$\phi$', phi) if plotTitle[0] == 'C' else 'Ca={}'.format(Ca)
+        else:
+            parameter = ''
 
         if plotType == 0:
             df_total, iv_total = [], [] # for making linear regression
@@ -61,9 +65,15 @@ def makeDFvsIVplot(ps, plotType, plotTitle, plotName):
         y_fit = predict(x_fit)
         ax.plot(x_fit, y_fit, linestyle='--', linewidth=3, color=plt.gca().lines[-1].get_color(), label=parameter)
 
-    ax.set_ylabel(r'$\left[ \eta \right]$', fontsize=15)
-    ax.set_xlabel(r'$\Phi$', fontsize=15)
-    ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+    ax.set_ylabel(r'$\left[ \eta \right]$', fontsize=20)
+    ax.set_xlabel(r'$\Phi$', fontsize=20)
+    ax.tick_params(labelsize=15)
+    ax.tick_params(which='both', width=1)
+    ax.xaxis.set_major_locator(MaxNLocator(5))
+    ax.xaxis.set_minor_locator(MaxNLocator(10))
+    ax.yaxis.set_major_locator(MaxNLocator(5)) 
+    ax.yaxis.set_minor_locator(MaxNLocator(10))
+    #ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
     ax.set_title(plotTitle, fontsize=20)
 
     fig.tight_layout()
@@ -73,6 +83,7 @@ if __name__ == "__main__":
     phi_range = [2.3994, 2.9993, 3.4492, 3.8991, 4.9488, 5.9986]
     Ca_range = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2]
 
+    '''
     # fix phi
     for phi in phi_range:
         ps = []
@@ -93,5 +104,5 @@ if __name__ == "__main__":
     for phi in [4.9488, 5.9986]:
         for Ca in [0.03, 0.06]:
             ps.append([phi, Ca])
-    makeDFvsIVplot(ps, 1)
-    '''
+    makeDFvsIVplot(ps, 1, '', 'manuscript')
+    

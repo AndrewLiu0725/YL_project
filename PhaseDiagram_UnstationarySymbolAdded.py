@@ -1,11 +1,13 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 01/13/2022
+# Last Modified Date: 08/16/2022
 # ===============================================================================
+from turtle import width
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 from matplotlib import cm
+from matplotlib.ticker import MultipleLocator
 import pickle
 
 """
@@ -13,6 +15,9 @@ This code is to add unstationary symbol on the phase diagram
 """
 
 DEBUG = 0
+
+SHOW = 0
+print("Setting:\nSHOW:{}".format(SHOW))
 
 # utility functions
 def Z(x, y, df):
@@ -83,9 +88,6 @@ def makePlot(variable_type, system, division_type, unstationary_symbol_style, al
     cb = fig.colorbar(im, ax = ax)
     cb.ax.tick_params(labelsize = 25)
     #ax.set_title("Phase Diagram of {} vs Ca ({} system)".format(r'$\phi$', system), fontsize = 30)
-    ax.set_xlabel('Ca', fontsize = 30)
-    ax.set_ylabel(r'$\phi$'+"(%)", fontsize = 35)
-    ax.tick_params(labelsize = 25)
 
     # add unstationary symbol
     if unstationary_symbol_style:
@@ -100,14 +102,23 @@ def makePlot(variable_type, system, division_type, unstationary_symbol_style, al
 
     void_marker = mlines.Line2D([], [], color = "k", marker = "x", linestyle = 'None', markersize = 20, label="unstationary")
 
+    ax.set_xlabel('Ca', fontsize = 35)
+    ax.set_ylabel(r'$\phi$'+"(%)", fontsize = 40)
+    ax.tick_params(labelsize=30)
+    ax.tick_params(which='both', width=3)
+    ax.xaxis.set_major_locator(MultipleLocator(0.05))
+    ax.xaxis.set_minor_locator(MultipleLocator(0.025))
+    ax.yaxis.set_major_locator(MultipleLocator(1))
+    ax.yaxis.set_minor_locator(MultipleLocator(0.5))
     ax.legend(handles = [void_marker], bbox_to_anchor=(0.9, 1.07), loc='upper left', prop={'size': 25}, frameon = False)
 
     fig.tight_layout()
     
-    plt.savefig('./Pictures/PhaseDiagram_UnstationarySymbolAdded/{}System_PhaseDiagram_UnstationarySymbolAdded_{}_{}_alpha_{}_SymbolStyle_{}.png'.format(
+    if SHOW:
+        plt.show()
+    else:
+        plt.savefig('./Pictures/PhaseDiagram_UnstationarySymbolAdded/{}System_PhaseDiagram_UnstationarySymbolAdded_{}_{}_alpha_{}_SymbolStyle_{}.png'.format(
         system, "IntrinsicViscosity" if variable_type == "IV" else "DoubletFraction",division_type, alpha, unstationary_symbol_style), dpi = 200)
-    
-    #plt.show()
 
 
 
@@ -119,5 +130,5 @@ if __name__ == "__main__":
     for system in system_list:
         for division_type in division_type_list:
             for alpha in [0.1]:
-                for unstationary_symbol_style in [0, 1]:
+                for unstationary_symbol_style in [0]:
                     makePlot("IV", system, division_type, unstationary_symbol_style, alpha)
