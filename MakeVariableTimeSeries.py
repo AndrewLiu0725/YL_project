@@ -1,10 +1,14 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 02/10/2022
+# Last Modified Date: 08/22/2022
 # ===============================================================================
 import matplotlib.pyplot as plt 
+from matplotlib.ticker import MaxNLocator
 import numpy as np 
 import pickle
+
+plt.rcParams['font.family'] = 'DeJavu Serif'
+plt.rcParams['font.serif'] = ['Times New Roman']
 
 # load data
 columns, rows = 2, 3
@@ -39,12 +43,16 @@ for i in range(columns): # system
         for k in range(3):
             phi, Ca = phis[k], Cas[k]
             ts = data[i][j][phi][Ca][0]
-            axs[j, i].plot((np.arange(len(ts))*factor)[::slicing], ts[::slicing], label = "{} = {}, Ca = {}".format(r'$\phi$', round(phi,1), Ca))
-        axs[j, i].set_xlabel("{}".format(r'$\dot \gamma t$'), fontsize = 15)
-        axs[j, i].set_ylabel(symbol_list[j], fontsize = 15)
-        axs[j, i].set_title("{} Time Series ({} System)".format(variable_list[j], system_list[i]), fontsize = 15)
-        axs[j, i].tick_params(labelsize = 12)
-        axs[j, i].legend()
+            axs[j, i].plot((np.arange(len(ts))*factor)[::slicing], ts[::slicing], label = "{} = {}%, Ca = {}".format(r'$\phi$', round(phi,1), Ca))
+        axs[j, i].set_xlabel("{}".format(r'$\gamma _{rot}$'), fontsize = 20)
+        axs[j, i].set_ylabel(symbol_list[j], fontsize = 20)
+        axs[j, i].set_title("{} Time Series ({} System)".format(variable_list[j], system_list[i]), fontsize = 20)
+        axs[j, i].tick_params(which='both', labelsize=15, width=2, length=8, direction='in')
+        axs[j, i].xaxis.set_major_locator(MaxNLocator(5))
+        axs[j, i].xaxis.set_minor_locator(MaxNLocator(10))
+        axs[j, i].yaxis.set_major_locator(MaxNLocator(5)) 
+        #axs[j, i].yaxis.set_minor_locator(MaxNLocator(10))
+        axs[j, i].legend(frameon=False, fontsize=15)
 fig.tight_layout()
 #plt.show()
-plt.savefig("Pictures/Manuscript/Variables_TimeSeries.png", dpi = 200)
+fig.savefig("Pictures/Manuscript/fig_S5.png", dpi = 200)
