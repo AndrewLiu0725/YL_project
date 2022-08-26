@@ -1,9 +1,10 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 09/08/2021
+# Last Modified Date: 08/24/2022
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 from RBC_Utilities import getSuspensionParameterSets
 import time
 import datetime
@@ -152,7 +153,8 @@ def run():
     f_main.write("Total time elapsed = {}\n".format(str(datetime.timedelta(seconds=time.time()-start_time))))
     f_main.close()
 
-
+CB_color_cycle = ['blue', 'cyan', 'black',
+                  'red', 'purple', 'brown']
 
 def makePlot(save, filepath, Ca_range_data, Ca_range_plot, suffix):
     phi_range = np.array([2.3994, 2.9993, 3.4492, 3.8991, 4.9488, 5.9986])
@@ -163,10 +165,12 @@ def makePlot(save, filepath, Ca_range_data, Ca_range_plot, suffix):
 
     fig, ax = plt.subplots(figsize = (9, 6))
 
+    line_id = 0
     for Ca_index, Ca in enumerate(Ca_range_data):
         if Ca not in Ca_range_plot: continue
-        p = ax.plot(phi_range*0.01, data[Ca_index, :, 0]/np.pi, linestyle = '--', marker = "^", label = 'Ca={}, {}={}'.format(Ca, r'$\xi$', r'$\Psi$'))
+        p = ax.plot(phi_range*0.01, data[Ca_index, :, 0]/np.pi, color=CB_color_cycle[line_id], linestyle = '--', marker = "^", label = 'Ca={}, {}={}'.format(Ca, r'$\xi$', r'$\Psi$'))
         ax.plot(phi_range*0.01, data[Ca_index, :, 1]/np.pi, linestyle = '--',marker = "v", color = p[0].get_color(), label = 'Ca = {}, {}={}'.format(Ca, r'$\xi$', r'$\theta$'))
+        line_id += 1
     ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     ax.set_xlabel(r'$\phi$', fontsize = 12)
     ax.set_ylabel(r'$\dfrac{\langle \xi \rangle }{\pi }$', fontsize = 12)
@@ -176,17 +180,25 @@ def makePlot(save, filepath, Ca_range_data, Ca_range_plot, suffix):
     else:
         plt.show()
     
-    fig, axs = plt.subplots(1, 2, figsize = (15, 6))
+    fig, axs = plt.subplots(1, 2, figsize = (18, 6))
+
+    line_id = 0
 
     for Ca_index, Ca in enumerate(Ca_range_data):
         if Ca not in Ca_range_plot: continue
-        axs[0].plot(phi_range*0.01, data[Ca_index, :, 0]/np.pi, linestyle = '--', marker = "^", label = 'Ca={}'.format(Ca))
-        axs[1].plot(phi_range*0.01, data[Ca_index, :, 1]/np.pi, linestyle = '--',marker = "v", label = 'Ca={}'.format(Ca))
+        axs[0].plot(phi_range*0.01, data[Ca_index, :, 0]/np.pi, color=CB_color_cycle[line_id], linestyle='--', marker="^", label='Ca={}'.format(Ca))
+        axs[1].plot(phi_range*0.01, data[Ca_index, :, 1]/np.pi, color=CB_color_cycle[line_id], linestyle='--', marker="v", label='Ca={}'.format(Ca))
+        line_id += 1
     for i in range(2):
-        axs[i].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-        axs[i].set_xlabel(r'$\phi$', fontsize = 12)
-        axs[i].set_ylabel(r'$\dfrac{\langle \theta \rangle }{\pi }$' if i else r'$\dfrac{\langle \Psi \rangle }{\pi }$', fontsize = 12)
-        axs[i].set_title('{} vs {}'.format(r'$\dfrac{\langle \theta \rangle }{\pi }$' if i else r'$\dfrac{\langle \Psi \rangle }{\pi }$', r'$\phi$'))
+        axs[i].legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=15)
+        axs[i].set_xlabel(r'$\phi$', fontsize = 20)
+        axs[i].set_ylabel(r'$\dfrac{\langle \theta \rangle }{\pi }$' if i else r'$\dfrac{\langle \Psi \rangle }{\pi }$', fontsize = 20)
+        #axs[i].set_title('{} vs {}'.format(r'$\dfrac{\langle \theta \rangle }{\pi }$' if i else r'$\dfrac{\langle \Psi \rangle }{\pi }$', r'$\phi$'), fontsize=20)
+        axs[i].tick_params(which='both', labelsize=15, width=2, length=8, direction='in')
+        axs[i].xaxis.set_major_locator(MultipleLocator(0.01))
+        axs[i].xaxis.set_minor_locator(MultipleLocator(0.005))
+        #axs[i].yaxis.set_major_locator(MaxNLocator(5)) 
+        #axs[i].yaxis.set_minor_locator(MaxNLocator(10))
     fig.tight_layout()
     if save:
         plt.savefig('Pictures/OrientationAngles/OrientationAngle_vs_phi_seperated_{}.png'.format(suffix), dpi = 200)

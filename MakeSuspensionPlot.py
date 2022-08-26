@@ -1,10 +1,13 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 08/16/2022
+# Last Modified Date: 08/24/2022
 # ===============================================================================
 import numpy as np 
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
+
+CB_color_cycle = ['blue', 'cyan', 'black',
+                  'red', 'purple', 'brown']
 
 """
 This code is to make the plots of intrinsic and relative viscosity vs Ca and phi for suspension system.
@@ -25,12 +28,14 @@ Ca_range = [0.01, 0.02, 0.03, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.14, 0.16, 0.1
 for i in range(2): # run over iv and rv
     for j in range(2): # with or wihtout errorbar
         fig, ax = plt.subplots(figsize = (12, 9))
+        line_id = 0
         for phi_index, phi in enumerate(phi_range):
             phi = round(phi, 1)
             if j == 0:
-                ax.errorbar(Ca_range, data[i, 0, phi_index, :], yerr = data[i, 1, phi_index, :], marker = 's', label = r'$\phi$'+' = {}%'.format(phi), capsize = 2)
+                ax.errorbar(Ca_range, data[i, 0, phi_index, :], yerr = data[i, 1, phi_index, :], color=CB_color_cycle[line_id], marker = 's', label = r'$\phi$'+' = {}%'.format(phi), capsize = 2)
             else:
-                ax.plot(Ca_range, data[i, 0, phi_index, :], marker = 's', label = r'$\phi$'+' = {}%'.format(phi))
+                ax.plot(Ca_range, data[i, 0, phi_index, :], color=CB_color_cycle[line_id], marker = 's', label = r'$\phi$'+' = {}%'.format(phi))
+            line_id += 1
 
 
         #plt.title("{} vs Ca (suspension system)".format(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$'), fontsize = 30)
@@ -52,14 +57,15 @@ for i in range(2): # run over iv and rv
 for i in range(2): # run over iv and rv
     for j in range(2): # with or wihtout errorbar
         fig, ax = plt.subplots(figsize = (12, 9))
+        line_id = 0
         for Ca_index, Ca in enumerate(Ca_range):
             if not Ca in [0.03, 0.06, 0.08, 0.1, 0.18]: continue
             #if Ca_index % 4 != 0: continue
             if j == 0:
-                ax.errorbar(phi_range, data[i, 0, :, Ca_index], yerr = data[i, 1, :, Ca_index], marker = 's', label = 'Ca = {}'.format(Ca), capsize = 2)
+                ax.errorbar(phi_range, data[i, 0, :, Ca_index], yerr = data[i, 1, :, Ca_index], color=CB_color_cycle[line_id], marker = 's', label = 'Ca = {}'.format(Ca), capsize = 2)
             else:
-                ax.plot(phi_range, data[i, 0, :, Ca_index], marker = 's', label = 'Ca = {}'.format(Ca))
-
+                ax.plot(phi_range, data[i, 0, :, Ca_index], color=CB_color_cycle[line_id], marker = 's', label = 'Ca = {}'.format(Ca))
+            line_id += 1
 
         #plt.title("{} vs {} (suspension system)".format(r'$\eta _{int}$' if i == 0 else r'$\eta _{rel}$', r'$\phi$'), fontsize = 30)
         ax.set_xlabel("{} (%)".format(r'$\phi$'), fontsize = 30)

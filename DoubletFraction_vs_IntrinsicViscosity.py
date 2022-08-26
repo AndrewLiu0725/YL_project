@@ -1,12 +1,15 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 08/16/2022
+# Last Modified Date: 08/24/2022
 # ===============================================================================
 #from tkinter import font
 import matplotlib.pyplot as plt
 import numpy as np 
 from RBC_Utilities import calcDoubletFraction, getIntrinsicViscosity, getSuspensionParameterSets
 from matplotlib.ticker import MaxNLocator
+
+CB_color_cycle = ['blue', 'cyan', 'black',
+                  'red', 'purple', 'brown']
 
 def makeDFvsIVplot(ps, plotType, plotTitle, plotName):
     '''
@@ -20,7 +23,7 @@ def makeDFvsIVplot(ps, plotType, plotTitle, plotName):
     [_, parameter_set] = getSuspensionParameterSets()
     st = 5
 
-    for [phi, Ca] in ps:
+    for ps_id, ([phi, Ca]) in enumerate(ps):
         if len(plotTitle) > 0:
             parameter = '{}={:.2}%'.format(r'$\phi$', phi) if plotTitle[0] == 'C' else 'Ca={}'.format(Ca)
         else:
@@ -57,7 +60,7 @@ def makeDFvsIVplot(ps, plotType, plotTitle, plotName):
             iv_total = [np.mean(data[df]) for df in df_total]
             iv_std = [np.std(data[df]) for df in df_total]
             #ax.errorbar(df_total, iv_total, iv_std, color='b', capsize = 2, marker = 's')
-            ax.plot(df_total, iv_total, marker='s', markerfacecolor='None', linestyle='None')
+            ax.plot(df_total, iv_total, color=CB_color_cycle[ps_id], marker='s', markerfacecolor='None', linestyle='None')
 
         model = np.polyfit(df_total, iv_total, 1)
         predict = np.poly1d(model)

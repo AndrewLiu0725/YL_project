@@ -1,6 +1,6 @@
 # ===============================================================================
 # Copyright 2021 An-Jun Liu
-# Last Modified Date: 08/16/2022
+# Last Modified Date: 08/24/2022
 # ===============================================================================
 import numpy as np
 from scipy import stats
@@ -121,7 +121,7 @@ if READ:
         data = pickle.load(handle) # data[system][phi] = [Cas, t_rot, t_rot_std]
 
 criteria_1 = 3
-color_list = ['orange', 'green']
+color_list = ['tab:pink', 'black']
 
 plt.rcParams['font.family'] = 'DeJavu Serif'
 plt.rcParams['font.serif'] = ['Times New Roman']
